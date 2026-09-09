@@ -1,0 +1,3145 @@
+:root {
+  --text: #9ca3af;
+  --text-h: #f3f4f6;
+  --bg: #1e1e1e;
+  --bg-titlebar: #252526;
+  --border: #2e303a;
+  --accent: #569cd6;
+
+  --bg-sidebar: #252526;
+  --text-sidebar: #cccccc;
+  --bg-tab-active: #1e1e1e;
+  --bg-tab-inactive: #2d2d2d;
+  --text-tab-active: #ffffff;
+  --text-tab-inactive: #b3b3b3;
+  --bg-hover: #2a2d2e;
+  --bg-selection: #04395e;
+
+  --bg-input: #3c3c3c;
+  --text-input: #d4d4d4;
+  --border-input: transparent;
+  --text-placeholder: #a6a6a6;
+  --bg-dropdown: #3c3c3c;
+
+  --bg-button: #0e639c;
+  --text-button: #ffffff;
+  --bg-button-hover: #1177bb;
+
+  --bg-menu: #252526;
+  --text-menu: #cccccc;
+  --border-menu: #454545;
+  --bg-menu-selection: #04395e;
+
+  --bg-badge: #4d4d4d;
+  --text-badge: #ffffff;
+
+  --bg-scrollbar: rgba(121, 121, 121, 0.4);
+  --bg-scrollbar-hover: rgba(100, 100, 100, 0.7);
+
+  --color-error: #f87171;
+  --color-success: #4ade80;
+
+  --logo-color: #7c3aed;
+  --logo-color-2: #2563eb;
+
+  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 14px/145% var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  scrollbar-color: var(--bg-scrollbar) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--bg-scrollbar);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 7px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--bg-scrollbar-hover);
+}
+
+:root[data-theme-kind="light"] {
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.titlebar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  background: var(--bg-titlebar);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-h);
+  font-size: 13px;
+  -webkit-app-region: drag;
+}
+
+.app-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-right: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-title {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titlebar-status {
+  font-size: 12px;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.titlebar select,
+.titlebar input {
+  -webkit-app-region: no-drag;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+
+.titlebar button {
+  -webkit-app-region: no-drag;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-h);
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+
+.menu-bar {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  height: 100%;
+}
+
+.menu-bar-item {
+  position: relative;
+  display: flex;
+}
+
+.titlebar button.menu-bar-label {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.titlebar button.menu-bar-label:hover,
+.titlebar button.menu-bar-label.open {
+  background: var(--bg-hover);
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 4px;
+  min-width: 200px;
+  background: var(--bg-menu);
+  border: 1px solid var(--border-menu);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  font-size: 12px;
+  color: var(--text-menu);
+}
+
+.menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background: var(--bg-menu-selection);
+}
+
+.menu-item.disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.menu-item.disabled:hover {
+  background: none;
+}
+
+.menu-item-check {
+  width: 12px;
+  flex: 0 0 auto;
+  opacity: 0.8;
+}
+
+.menu-item-label {
+  flex: 1 1 auto;
+}
+
+.menu-item-shortcut {
+  flex: 0 0 auto;
+  opacity: 0.6;
+  font-size: 11px;
+  margin-left: 12px;
+}
+
+.menu-item-arrow {
+  flex: 0 0 auto;
+  opacity: 0.7;
+  font-size: 10px;
+}
+
+.menu-submenu {
+  top: -5px;
+  left: 100%;
+}
+
+.update-pill {
+  -webkit-app-region: no-drag;
+  flex: 0 0 auto;
+  font-size: 12px;
+  white-space: nowrap;
+  padding: 3px 10px;
+  margin-right: 4px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+button.update-pill-ready {
+  cursor: pointer;
+  font: inherit;
+  color: #fff;
+  background: var(--accent);
+}
+
+button.update-pill-ready:hover {
+  background: color-mix(in srgb, var(--accent) 85%, #fff);
+}
+
+.window-controls {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-self: stretch;
+  margin: 0 -12px 0 4px;
+}
+
+.titlebar button.window-control {
+  width: 44px;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--text) 0%, transparent);
+  color: var(--text-h);
+  cursor: pointer;
+  opacity: 0.75;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.window-control svg {
+  transition: transform 0.2s ease;
+}
+
+.titlebar button.window-control:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--text) 20%, transparent);
+}
+
+.titlebar button.window-control:active {
+  background: color-mix(in srgb, var(--text) 32%, transparent);
+  transition-duration: 0.05s;
+}
+
+.window-control:hover svg {
+  transform: scale(1.1);
+}
+
+.titlebar button.window-control-close:hover {
+  opacity: 1;
+  background: #e81123;
+  color: #fff;
+}
+
+.titlebar button.window-control-close:active {
+  background: #c50f1f;
+}
+
+.tab-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-titlebar);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-bar-scroll {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.tab-bar-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  border-left: 1px solid var(--border);
+}
+
+.tab {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border-right: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-tab-inactive);
+  background: var(--bg-tab-inactive);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab.active {
+  color: var(--text-tab-active);
+  background: var(--bg-tab-active);
+}
+
+.tab-close {
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.tab-close:hover {
+  opacity: 1;
+}
+
+.tab-new {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.tab-new:hover {
+  color: var(--text-h);
+}
+
+.workbench {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+
+.editor-column {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.editor-area {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.editor-surface {
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar-container {
+  flex: 0 0 auto;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  /* Grid, not flex: row 1 (Explorador) is a flexible track that gets whatever row 2 (Conexões)
+     doesn't need; row 2 sizes to its own content, capped via .fixed-size below. This used to be
+     flex (`flex: 1 1 auto` / `flex: 0 1 auto`), but flexbox's shrink algorithm weighs each item by
+     its own *content-based* hypothetical size — and Explorador's hypothetical size is enormous (the
+     virtualized file list's real, un-shrunk content height can be tens of thousands of pixels; see
+     FileExplorer.tsx's `.file-tree` height), which skewed the shrink math so badly that Conexões
+     barely shrank at all and got pushed past the bottom instead. A `minmax(0, 1fr)` grid track's
+     size doesn't depend on its own content's size at all — it's just "the leftover space" — so this
+     class of bug can't recur regardless of how tall the file list's real content is. */
+  grid-template-rows: minmax(0, 1fr) auto;
+  /* Safety net, not the primary mechanism (each section scrolls internally — see
+     .sidebar-section-body/.file-tree-viewport). Kept in case some future content still manages to
+     overflow — reachable via scroll beats silently clipped. */
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-sidebar);
+  background: var(--bg-sidebar);
+}
+
+.resize-handle {
+  flex: 0 0 auto;
+  background: transparent;
+  position: relative;
+  z-index: 10;
+}
+
+.resize-handle::after {
+  content: "";
+  position: absolute;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.15s ease 0.1s;
+}
+
+.resize-handle:hover::after {
+  opacity: 0.6;
+}
+
+.resize-handle-x {
+  width: 4px;
+  margin-left: -2px;
+  cursor: col-resize;
+}
+
+.resize-handle-x::after {
+  inset: 0 1px;
+}
+
+.resize-handle-y {
+  height: 4px;
+  margin-top: -2px;
+  cursor: row-resize;
+}
+
+.resize-handle-y::after {
+  inset: 1px 0;
+}
+
+.sidebar-section {
+  /* Still a flex column internally, for its own header+body stacking — just no longer a *flex item*
+     of .sidebar itself (that's a grid now, see above). min-height/min-width: 0 keep this from
+     forcing its grid row/column larger than intended by its own content's automatic minimum size. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* A section that sizes to its own content and gets capped rather than being allowed to grow — e.g.
+   Conexões, which shouldn't take over the sidebar just because there happen to be many saved
+   connections. vh, not %, so the cap is always a definite value regardless of how the ancestor
+   chain's heights resolve. A long list still scrolls internally (.sidebar-section-body already has
+   its own overflow-y: auto) once it hits the cap. */
+.sidebar-section.fixed-size:not(.collapsed) {
+  max-height: 40vh;
+}
+
+.sidebar-section-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sidebar-section-header:hover {
+  background: var(--bg-hover);
+}
+
+.sidebar-chevron {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--text-sidebar);
+  transition: transform 0.12s ease;
+}
+
+.sidebar-section.collapsed .sidebar-chevron {
+  transform: rotate(-90deg);
+}
+
+.sidebar-section-title {
+  flex: 1 1 auto;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-h);
+}
+
+.sidebar-section-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.sidebar-section-actions button {
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--text-sidebar);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 5px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.sidebar-section-actions button:hover {
+  opacity: 1;
+  background: var(--bg-hover);
+}
+
+.sidebar-section-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 10px 10px;
+}
+
+.connections-empty {
+  opacity: 0.7;
+  font-style: italic;
+  padding: 4px 2px;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 1000;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  min-width: 160px;
+  background: var(--bg-menu);
+  border: 1px solid var(--border-menu);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  font-size: 12px;
+  color: var(--text-menu);
+}
+
+.context-menu li {
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.context-menu li:hover {
+  background: var(--bg-menu-selection);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Covers the whole window (not just the sidebar) while a server connection is in flight, so
+   switching servers reads as "loading" instead of the UI looking stuck — see ConnectionsPanel's
+   `connect()`. z-index sits above modals/context menus since a connect can be triggered from
+   either. */
+.connecting-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+.connecting-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  animation: connecting-spin 0.8s linear infinite;
+}
+
+.connecting-message {
+  font-size: 13px;
+}
+
+@keyframes connecting-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.modal {
+  min-width: 320px;
+  background: var(--bg-menu);
+  border: 1px solid var(--border-menu);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.modal h4 {
+  margin: 0 0 10px;
+  color: var(--text-menu);
+  font-size: 13px;
+}
+
+.modal input {
+  width: 100%;
+  font: inherit;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.modal input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.modal-actions button {
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-button);
+  background: var(--bg-button);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.modal-actions button:hover {
+  background: var(--bg-button-hover);
+}
+
+.settings-modal {
+  width: 640px;
+  max-width: 92vw;
+  max-height: 82vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-modal-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-menu);
+}
+
+.settings-modal-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-menu);
+}
+
+.settings-close {
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-menu);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.settings-close:hover {
+  background: var(--bg-hover);
+}
+
+.settings-modal-body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-tabs {
+  flex: 0 0 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-right: 1px solid var(--border-menu);
+  overflow-y: auto;
+}
+
+.settings-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-menu);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+
+.settings-tab:hover {
+  background: var(--bg-hover);
+}
+
+.settings-tab.active {
+  background: var(--bg-menu-selection);
+  color: var(--text-h);
+}
+
+.settings-tab-icon {
+  flex: 0 0 auto;
+}
+
+.settings-content {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-section h4 {
+  margin: 0 0 4px;
+  color: var(--text-menu);
+  font-size: 13px;
+}
+
+.settings-hint {
+  margin: 0 0 12px;
+  color: var(--text-placeholder);
+  font-size: 12px;
+}
+
+.settings-actions {
+  margin-top: 10px;
+}
+
+.settings-actions button {
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-button);
+  background: var(--bg-button);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+.settings-actions button:hover {
+  background: var(--bg-button-hover);
+}
+
+/* AI provider form fields in the Inteligência Artificial tab. */
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.settings-field > span {
+  font-size: 12px;
+  color: var(--text-menu);
+}
+
+.settings-field input,
+.settings-field select {
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.settings-field input:focus,
+.settings-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.settings-field input:disabled,
+.settings-field select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settings-primary {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+.settings-primary:hover {
+  filter: brightness(1.1);
+}
+
+/* API key rows in the Inteligência Artificial tab: one per provider, all fillable at once and
+   saved together (see SettingsModal's handleSaveAi). */
+.settings-key-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-key-status {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.settings-key-status.ok {
+  color: var(--color-success);
+}
+
+.settings-key-status.missing {
+  color: var(--text-sidebar);
+  opacity: 0.7;
+}
+
+.settings-key-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-key-line input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.settings-key-remove {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-sidebar);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.settings-key-remove input {
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 0;
+}
+
+.settings-status {
+  margin: 0 0 0 10px;
+  font-style: normal;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  cursor: pointer;
+  color: var(--text-menu);
+  background: transparent;
+  border: 1px solid var(--border-menu);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.theme-swatch:hover {
+  background: var(--bg-hover);
+}
+
+.theme-swatch.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.theme-swatch-preview {
+  width: 100%;
+  height: 40px;
+  border-radius: 4px;
+  border: 1px solid;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 4px;
+}
+
+.theme-swatch-accent {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.theme-swatch-label {
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.theme-swatch-kind {
+  font-size: 11px;
+  color: var(--text-placeholder);
+}
+
+.accent-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.accent-swatch {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.accent-swatch.selected {
+  border-color: var(--text-h);
+  box-shadow: 0 0 0 2px var(--bg-menu);
+}
+
+.accent-swatch-custom {
+  background: var(--bg-input);
+  color: var(--text-input);
+}
+
+.accent-swatch-custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+}
+
+.quick-open-modal {
+  width: 480px;
+  max-width: 90vw;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quick-open-input {
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+.quick-open-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.quick-open-list li {
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-menu);
+  font-size: 12px;
+  font-family: var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-open-list li.active,
+.quick-open-list li:hover {
+  background: var(--bg-menu-selection);
+}
+
+.quick-open-empty {
+  opacity: 0.7;
+  cursor: default !important;
+}
+
+.quick-open-empty:hover {
+  background: none !important;
+}
+
+.sql-runner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+  padding: 12px;
+}
+
+.sql-runner-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+
+.sql-runner-toolbar select {
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-input);
+  background: var(--bg-dropdown);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.sql-runner-toolbar button {
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-button);
+  background: var(--bg-button);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.sql-runner-toolbar button:hover {
+  background: var(--bg-button-hover);
+}
+
+.sql-editor {
+  flex: 0 0 auto;
+  height: 100px;
+  resize: vertical;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.sql-results {
+  flex: 1 1 auto;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.sql-results table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.sql-results th,
+.sql-results td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sql-results th {
+  color: var(--text-sidebar);
+  position: sticky;
+  top: 0;
+  background: var(--bg-sidebar);
+}
+
+.agent-panel {
+  --agent-add: #3fb950;
+  --agent-del: #f85149;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+  padding: 14px;
+  /* A faint top-down gradient instead of a flat fill gives the panel some depth without fighting
+     the active theme — it's derived from the theme's own --bg so it still looks right in both a
+     light and a dark theme instead of hardcoding a shade. */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg) 96%, white 4%) 0%,
+    var(--bg) 260px
+  );
+}
+
+.agent-panel-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.agent-panel-namespace {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Fires while an approved/rejected write is still being saved/compiled in the background — the
+   review dialog itself already closed the instant the user clicked (see resolvePending), so this
+   is the only feedback that work is still happening. margin-left: auto pushes it to the header's
+   far edge now that there's no filler element next to the namespace label. */
+.agent-panel-saving-badge {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-sidebar);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  animation: agent-fade-in 0.15s ease;
+}
+
+.agent-panel-saving-spinner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-top-color: var(--accent);
+  animation: connecting-spin 0.7s linear infinite;
+}
+
+.agent-panel-error {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--agent-del);
+  background: color-mix(in srgb, var(--agent-del) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--agent-del) 40%, transparent);
+  animation: agent-fade-in 0.15s ease;
+}
+
+.agent-panel-error button {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+/* The chat column lives on the left, the Alterações rail on the right — flex `order` reorders them
+   so the DOM can keep the rail first while it renders as the right-hand side panel of an
+   agent-first IDE. min-height: 0 here and on every flex item down this chain is what lets the
+   chat/drawer scroll internally instead of the row overflowing the panel. */
+.agent-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.agent-panel-main {
+  flex: 1 1 auto;
+  order: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agent-panel-chat {
+  flex: 1 1 auto;
+  min-height: 100px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--bg-sidebar);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.agent-panel-chat-empty {
+  margin: auto;
+  text-align: center;
+  max-width: 380px;
+}
+
+/* Conventional chat layout: each message is an avatar + body row, user messages hugging the right
+   edge, assistant ones the left. */
+.agent-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.agent-msg-user {
+  justify-content: flex-end;
+}
+
+.agent-msg-avatar {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+}
+
+.agent-msg-user .agent-msg-avatar {
+  order: 2;
+}
+
+.agent-msg-body {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: min(75%, 700px);
+}
+
+.agent-msg-bubble {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  word-break: break-word;
+}
+
+/* The user's own message reads clearly as theirs: accent-tinted bubble on the right. */
+.agent-msg-bubble-user {
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-input));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  white-space: pre-wrap;
+}
+
+/* Tiny blinking caret while the assistant's bubble is still streaming in — inserted directly into
+   the markdown source (see AgentMarkdown usage in AgentPanel.tsx) so it flows as real inline
+   content right after the last character written so far, instead of a sibling element that would
+   only ever sit at a fixed spot regardless of how much text has streamed in. */
+.agent-msg-typing {
+  display: inline-block;
+  margin-left: 1px;
+  animation: agent-caret-blink 0.8s steps(1) infinite;
+}
+
+.agent-msg-bubble-writing {
+  color: var(--text-sidebar);
+  font-style: italic;
+}
+
+@keyframes agent-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Tool calls inside an assistant message (see ToolCard) render as a small stack of collapsible
+   cards above the reply text, so the narration reads tool-first, answer-after. */
+.agent-msg-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.agent-msg-tools:empty {
+  display: none;
+}
+
+.agent-panel-model-badge {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--text-sidebar);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The agent's replies are markdown (rendered via marked + DOMPurify — see
+   src/utils/markdown.ts), not plain text, so this styles the actual HTML it produces rather than
+   relying on white-space: pre-wrap over a raw string. */
+.agent-msg-markdown {
+  word-break: break-word;
+}
+
+.agent-msg-markdown > :first-child {
+  margin-top: 0;
+}
+
+.agent-msg-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.agent-msg-markdown p {
+  margin: 0.35em 0;
+}
+
+.agent-msg-markdown h1,
+.agent-msg-markdown h2,
+.agent-msg-markdown h3,
+.agent-msg-markdown h4,
+.agent-msg-markdown h5,
+.agent-msg-markdown h6 {
+  margin: 0.9em 0 0.4em;
+  font-weight: 600;
+  color: var(--text-h);
+  line-height: 1.3;
+}
+
+.agent-msg-markdown h1 {
+  font-size: 1.3em;
+}
+.agent-msg-markdown h2 {
+  font-size: 1.18em;
+}
+.agent-msg-markdown h3 {
+  font-size: 1.08em;
+}
+.agent-msg-markdown h4,
+.agent-msg-markdown h5,
+.agent-msg-markdown h6 {
+  font-size: 1em;
+}
+
+.agent-msg-markdown ul,
+.agent-msg-markdown ol {
+  margin: 0.5em 0;
+  padding-left: 1.4em;
+}
+
+.agent-msg-markdown li {
+  margin: 0.15em 0;
+}
+
+.agent-msg-markdown li > p {
+  margin: 0.2em 0;
+}
+
+.agent-msg-markdown a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.agent-msg-markdown a:hover {
+  text-decoration: underline;
+}
+
+.agent-msg-markdown strong {
+  color: var(--text-h);
+  font-weight: 700;
+}
+
+.agent-msg-markdown code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: var(--bg-input);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+}
+
+.agent-msg-markdown pre {
+  margin: 0.6em 0;
+  padding: 8px 10px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.agent-msg-markdown pre code {
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.agent-msg-markdown blockquote {
+  margin: 0.5em 0;
+  padding: 2px 10px;
+  border-left: 3px solid var(--border);
+  color: var(--text-sidebar);
+}
+
+.agent-msg-markdown hr {
+  margin: 0.8em 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+.agent-msg-markdown table {
+  margin: 0.5em 0;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+
+.agent-msg-markdown th,
+.agent-msg-markdown td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.agent-msg-markdown th {
+  background: var(--bg-input);
+  color: var(--text-h);
+}
+
+/* The model's reasoning/thinking trail — kept per-message (not thrown away once the run moves on)
+   so a long or complex turn always leaves something to expand and read, instead of only ever
+   flashing by in the activity line below. Auto-open while streaming (see AgentPanel.tsx), collapses
+   once the reply is done since by then the actual answer below it is what matters. */
+.agent-msg-reasoning {
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  border-radius: 6px;
+}
+
+.agent-msg-reasoning summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--text-sidebar);
+  list-style: none;
+}
+
+.agent-msg-reasoning summary::-webkit-details-marker {
+  display: none;
+}
+
+.agent-msg-reasoning-text {
+  padding: 2px 10px 8px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 11.5px;
+  color: var(--text-sidebar);
+  font-style: italic;
+}
+
+.agent-msg-tool {
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+}
+
+.agent-msg-tool summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--text-sidebar);
+  list-style: none;
+}
+
+.agent-msg-tool summary::-webkit-details-marker {
+  display: none;
+}
+
+.agent-tool-name {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+.agent-tool-title {
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-tool-input {
+  margin: 0;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0.85;
+}
+
+/* A failed tool call (see errorText in agentTranscript.ts) — a red-tinted border on the whole
+   block, not just the icon, so it reads as "something broke here" even when the <details> is
+   collapsed after its first auto-opened render. */
+.agent-msg-tool-failed {
+  border-color: color-mix(in srgb, var(--agent-del) 50%, var(--border));
+}
+
+/* A delegated sub-agent call ("task") — tinted with the accent color so it visually stands apart
+   from an ordinary tool call, since what's happening inside it is a whole separate turn. */
+.agent-msg-tool-task {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-input));
+}
+
+.agent-tool-running-spinner {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  margin-left: auto;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-top-color: var(--accent);
+  animation: connecting-spin 0.7s linear infinite;
+}
+
+.agent-tool-error {
+  padding: 6px 10px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--agent-del) 10%, transparent);
+  color: var(--agent-del);
+  font-size: 12px;
+}
+
+.agent-msg-raw {
+  padding: 4px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0.7;
+}
+
+.agent-msg-error {
+  border-left: 2px solid var(--agent-del);
+  padding-left: 8px;
+  color: var(--agent-del);
+  opacity: 1;
+}
+
+/* A structured error the agent's own protocol reported (parsed as `kind: "error"` — see
+   agentTranscript.ts), as opposed to .agent-msg-error above which is just stderr noise tinted red.
+   Gets the same alert treatment as .agent-tool-error since it's a confirmed failure, not a maybe. */
+.agent-msg-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--agent-del) 40%, transparent);
+  background: color-mix(in srgb, var(--agent-del) 12%, transparent);
+  color: var(--agent-del);
+  font-size: 12px;
+}
+
+.agent-msg-alert-icon {
+  flex: 0 0 auto;
+}
+
+/* Shown between the transcript and composer while running — see currentActivity in
+   AgentPanel.tsx, which derives the label from whatever the last transcript item was (a tool
+   name/title, or "writing a reply") so this always reflects what's actually happening rather than
+   a generic "loading…" that never changes. */
+.agent-panel-loader {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-sidebar);
+  background: var(--bg-hover);
+  animation: agent-fade-in 0.15s ease;
+}
+
+.agent-panel-loader-spinner {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-top-color: var(--accent);
+  animation: connecting-spin 0.7s linear infinite;
+}
+
+/* Replaces .agent-panel-loader once STALL_MS passes with no new event — same slot, different
+   message: instead of implying progress, it names the concern and offers the same "Parar" the
+   composer already has, since a genuinely stuck run otherwise gives no visible sign anything is
+   wrong short of the user noticing the transcript stopped scrolling. */
+.agent-panel-stalled {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--agent-del);
+  background: color-mix(in srgb, var(--agent-del) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--agent-del) 40%, transparent);
+  animation: agent-fade-in 0.15s ease;
+}
+
+.agent-panel-composer {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+
+.agent-panel-composer textarea {
+  flex: 1 1 auto;
+  height: 46px;
+  resize: vertical;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 6px;
+  padding: 6px 10px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.agent-panel-composer textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.agent-panel-run-button,
+.agent-panel-secondary {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    filter 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.05s ease;
+}
+
+.agent-panel-run-button {
+  color: #fff;
+  background: var(--accent);
+  border: 1px solid transparent;
+}
+
+.agent-panel-run-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.agent-panel-run-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.agent-panel-run-button:active:not(:disabled),
+.agent-panel-secondary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.agent-panel-stop-button {
+  background: var(--agent-del);
+}
+
+.agent-panel-secondary {
+  color: var(--text-sidebar);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.agent-panel-secondary:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.agent-panel-new-chat-button {
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--text-sidebar);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 9px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.agent-panel-new-chat-button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-h);
+}
+
+.agent-panel-new-chat-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The Alterações rail: a slim always-visible vertical tab on the panel's RIGHT edge, with a drawer
+   that slides out to its left when opened — it only claims screen space when the user actually
+   wants to look at it. order: 2 pins it past the chat column (which is drawn first via
+   .agent-panel-main's order: 1, even though both sit second in the DOM). */
+.agent-panel-history-rail {
+  flex: 0 0 auto;
+  order: 2;
+  display: flex;
+  height: 100%;
+}
+
+.agent-panel-history-drawer {
+  width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--bg-sidebar) 92%, black 8%);
+  transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agent-panel-history-drawer.open {
+  width: 320px;
+}
+
+/* First in the DOM but drawn last, pinned to the panel's far right edge; its left border is what
+   separates the tab strip from the drawer when the latter is open. */
+.agent-panel-history-tabstrip {
+  flex: 0 0 auto;
+  order: 2;
+  width: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding-top: 10px;
+  background: color-mix(in srgb, var(--bg-sidebar) 92%, black 8%);
+  border-left: 1px solid var(--border);
+}
+
+.agent-panel-history-tab {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sidebar);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.agent-panel-history-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-h);
+}
+
+.agent-panel-history-tab.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.agent-panel-history-tab-icon {
+  writing-mode: horizontal-tb;
+  transform: rotate(180deg);
+}
+
+/* Only mounted while the drawer is open (see AgentPanel.tsx), so it can be a plain flex column at
+   full drawer height instead of the max-height-and-border-top treatment the old docked-below
+   section needed to share space with the transcript above it. */
+.agent-panel-review-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 320px;
+  padding: 10px 10px 6px;
+}
+
+.agent-panel-review-header h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sidebar);
+}
+
+.agent-panel-review-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* The empty-state message is a plain-flow child here (unlike the review rows below, which are
+   absolutely positioned and each carry their own horizontal padding), so without this it sits
+   flush against the drawer's edge instead of lining up with the header above it. */
+.agent-panel-review-list > .connection-status {
+  padding: 0 10px;
+}
+
+.agent-panel-chat-session-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 320px;
+  overflow-y: auto;
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agent-panel-chat-session-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.agent-panel-chat-session-open {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-input);
+  text-align: left;
+  cursor: pointer;
+}
+
+.agent-panel-chat-session-open:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.agent-panel-chat-session-open:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.agent-panel-chat-session-title {
+  font-size: 12px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.agent-panel-chat-session-date {
+  font-size: 10.5px;
+  color: var(--text-sidebar);
+}
+
+.agent-panel-chat-session-delete {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-input);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+.agent-panel-chat-session-delete:hover {
+  border-color: color-mix(in srgb, var(--agent-del) 45%, var(--border));
+}
+
+/* Virtualized: rows are absolutely positioned at a precomputed `top` inside this height-only
+   spacer (see AgentPanel.tsx's reviewOffsets) so only the rows actually scrolled into view ever
+   mount, instead of every diff in the whole session's history sitting in the DOM at once. */
+.agent-review-rows {
+  position: relative;
+}
+
+.agent-review-row-batch,
+.agent-review-row-entry {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.agent-review-row-batch {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-sidebar);
+  background: var(--bg-input);
+  border-top: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-panel-diff-entry-summary {
+  width: 100%;
+  height: 28px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: inherit;
+  background: var(--bg);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+}
+
+.agent-panel-diff-entry-summary:hover {
+  background: var(--bg-hover);
+}
+
+.agent-review-row-toggle {
+  flex: 0 0 auto;
+  opacity: 0.6;
+  font-size: 10px;
+}
+
+.agent-panel-diff-entry-approved,
+.agent-panel-diff-entry-discarded {
+  opacity: 0.7;
+}
+
+.agent-panel-diff-entry-failed {
+  opacity: 0.9;
+  color: var(--agent-del);
+}
+
+.agent-panel-diff-patch {
+  margin: 0;
+  padding: 8px 0;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: pre;
+}
+
+.agent-review-row-entry .agent-panel-diff-patch {
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.agent-panel-diff-patch > div {
+  padding: 0 10px;
+}
+
+.agent-panel-diff-patch .diff-add {
+  background: color-mix(in srgb, var(--agent-add) 15%, transparent);
+  color: var(--agent-add);
+}
+
+.agent-panel-diff-patch .diff-del {
+  background: color-mix(in srgb, var(--agent-del) 15%, transparent);
+  color: var(--agent-del);
+}
+
+.agent-panel-diff-patch .diff-hunk {
+  color: var(--text-sidebar);
+  opacity: 0.7;
+}
+
+@keyframes agent-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes agent-dialog-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Full-screen review dialog: replaces the old inline "pending approval" banner. Approving or
+   rejecting removes the item from `pendingWrites` immediately (see resolvePending in
+   AgentPanel.tsx), which unmounts this the instant the user clicks — the save/compile itself keeps
+   running in the background and reports back via the log + the saving badge in the header, so the
+   user is never stuck staring at a dialog waiting for a network round trip. */
+.agent-review-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5vh 6vw;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  animation: agent-fade-in 0.15s ease;
+}
+
+.agent-review-dialog {
+  width: 100%;
+  height: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-menu) 97%, white 3%) 0%,
+    var(--bg-menu) 240px
+  );
+  border: 1px solid var(--border-menu);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  animation: agent-dialog-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agent-review-dialog-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.agent-review-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.agent-review-dialog-icon {
+  flex: 0 0 auto;
+  font-size: 22px;
+}
+
+.agent-review-dialog-title h3 {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-review-dialog-subtitle {
+  display: block;
+  font-size: 11px;
+  color: var(--text-sidebar);
+  opacity: 0.75;
+}
+
+.agent-review-dialog-count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-badge);
+  background: var(--bg-badge);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.agent-review-dialog-diff {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  white-space: pre;
+  background: var(--bg);
+}
+
+.agent-review-dialog-diff > div {
+  padding: 1px 20px;
+}
+
+.agent-review-dialog-diff .diff-add {
+  background: color-mix(in srgb, var(--agent-add) 15%, transparent);
+  color: var(--agent-add);
+}
+
+.agent-review-dialog-diff .diff-del {
+  background: color-mix(in srgb, var(--agent-del) 15%, transparent);
+  color: var(--agent-del);
+}
+
+.agent-review-dialog-diff .diff-hunk {
+  color: var(--text-sidebar);
+  opacity: 0.7;
+}
+
+.agent-review-dialog-actions {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.agent-review-dialog-actions .agent-panel-run-button,
+.agent-review-dialog-actions .agent-panel-secondary {
+  align-self: auto;
+  padding: 9px 18px;
+}
+
+.api-tester {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.api-tester-routes {
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  padding: 12px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.api-tester-routes-header {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.api-tester-base-path {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.api-tester-base-path input,
+.api-tester-base-path select {
+  font: inherit;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+
+.api-route-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.api-route-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.api-route-list li:hover {
+  background: var(--bg-hover);
+}
+
+.api-route-list li.active {
+  background: var(--bg-selection);
+}
+
+.api-route-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-h);
+}
+
+.api-route-method {
+  flex: 0 0 auto;
+  min-width: 3.5em;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 1px 4px;
+  color: #ffffff;
+  background: #6b7280;
+}
+
+.api-route-method-get {
+  background: #2563eb;
+}
+
+.api-route-method-post {
+  background: #16a34a;
+}
+
+.api-route-method-put,
+.api-route-method-patch {
+  background: #d97706;
+}
+
+.api-route-method-delete {
+  background: #dc2626;
+}
+
+.api-tester-request {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.api-tester-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+
+.api-tester-toolbar select {
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-input);
+  background: var(--bg-dropdown);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.api-tester-url {
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.api-tester-toolbar button {
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-button);
+  background: var(--bg-button);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.api-tester-toolbar button:hover:not(:disabled) {
+  background: var(--bg-button-hover);
+}
+
+.api-tester-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.api-tester-full-url {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.75;
+  word-break: break-all;
+}
+
+.api-tester-fields {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 10px;
+}
+
+.api-tester-fields label {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.api-tester-headers,
+.api-tester-body {
+  height: 80px;
+  resize: vertical;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.api-tester-response {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.api-response-status {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.api-response-duration {
+  opacity: 0.7;
+}
+
+.api-response-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.file-tree-icon {
+  display: inline-block;
+  width: 18px;
+}
+
+.connections-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.connections-list li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+  border-radius: 4px;
+}
+
+.connections-list li.active {
+  background: var(--bg-selection);
+}
+
+.connections-list .connection-name {
+  flex: 1 1 auto;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connections-list button {
+  background: none;
+  border: none;
+  color: var(--text-sidebar);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.specs-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.specs-file-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.specs-file-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.specs-file-row:hover {
+  background: var(--bg-hover);
+}
+
+.specs-file-icon {
+  flex: 0 0 auto;
+}
+
+.connection-form {
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.connection-form summary {
+  cursor: pointer;
+  color: var(--text-sidebar);
+}
+
+.connection-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.connection-form label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.connection-form input {
+  font: inherit;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+
+.connection-form input::placeholder,
+.documents-list > input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.connection-form-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.connection-form-actions button {
+  flex: 1 1 auto;
+  cursor: pointer;
+  color: var(--text-button);
+  background: var(--bg-button);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.connection-form-actions button:hover {
+  background: var(--bg-button-hover);
+}
+
+.namespace-select {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.namespace-select select {
+  flex: 1 1 auto;
+  font: inherit;
+  color: var(--text-input);
+  background: var(--bg-dropdown);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+
+.documents-list > input {
+  width: 100%;
+  font: inherit;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 3px 6px;
+  margin-bottom: 6px;
+}
+
+.show-system-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.85;
+  color: var(--text-sidebar);
+  cursor: pointer;
+}
+
+.show-system-toggle input {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.show-system-toggle:hover {
+  opacity: 1;
+}
+
+/* The Explorador section body is a flex column so the file tree — the only part that can get large
+   — is the one flexible, independently-scrolling region; the namespace/filter/system-files controls
+   above it stay a fixed size and always stay in view instead of scrolling away with the list. */
+.documents-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.documents-list > .namespace-select,
+.documents-list > input,
+.documents-list > .show-system-toggle {
+  flex: 0 0 auto;
+}
+
+/* Virtualized: only the rows scrolled into view (plus a small overscan) are ever mounted, so this
+   stays equally light whether the namespace has a dozen classes or a hundred thousand — see
+   FileExplorer.tsx. `.file-tree`'s height is set inline to rows.length * ROW_HEIGHT purely so the
+   scrollbar's size/position reflect the true (unmounted) row count; each row is positioned with an
+   inline `top` computed from its index, matching the row-height constant used for that math. */
+.file-tree-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.file-tree {
+  position: relative;
+}
+
+.file-tree-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  outline: none;
+}
+
+.file-tree-row:hover {
+  background: var(--bg-hover);
+}
+
+/* Focus doubles as "selected" — clicking a row focuses it, so this is what persists the VSCode-style
+   selection highlight after the pointer moves away, and what F2 keys off of. */
+.file-tree-row:focus {
+  background: var(--bg-selection);
+}
+
+.file-tree-row.dragging {
+  opacity: 0.5;
+}
+
+.file-tree-row.drag-over {
+  background: var(--bg-selection);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.file-tree-chevron {
+  display: inline-block;
+  width: 14px;
+  flex: 0 0 auto;
+  font-size: 10px;
+  text-align: center;
+  opacity: 0.75;
+}
+
+/* One per ancestor depth, positioned to line up with that ancestor's icon column — since every row
+   under a given folder draws the same segment, consecutive rows form what reads as one continuous
+   vertical guide line down through the folder's contents, without needing to measure sibling bounds. */
+.file-tree-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+.file-tree-rename-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 0 4px;
+  margin: 0 4px 0 2px;
+  outline: none;
+}
+
+.connection-status {
+  margin-top: 8px;
+  font-size: 11px;
+  opacity: 0.8;
+  word-break: break-word;
+}
+
+.output-container {
+  flex: 0 0 auto;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  animation: agent-fade-in 0.15s ease;
+}
+
+.output-panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  min-height: 0;
+}
+
+.output-panel-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-h);
+  border-bottom: 1px solid var(--border);
+}
+
+.output-panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.output-panel-header button {
+  font: inherit;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.output-panel-header button:hover {
+  background: var(--bg-hover);
+  color: var(--text-h);
+}
+
+.output-panel-hide {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.output-panel-hide svg {
+  flex: 0 0 auto;
+  display: block;
+}
+
+/* Replaces the output panel while it's hidden — kept at all times so reopening it is one click,
+   not a trip to the View menu or a shortcut. Mirrors .output-panel-tabs' look so it reads as "the
+   same tabs, just collapsed" rather than a different control. */
+.output-collapsed-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.output-collapsed-bar button {
+  font: inherit;
+  font-size: 11px;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border);
+  padding: 5px 14px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.output-collapsed-bar button:hover {
+  background: var(--bg-hover);
+  color: var(--text-h);
+}
+
+.output-panel-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 6px 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.output-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 1px 0;
+}
+
+.output-line-time {
+  opacity: 0.6;
+}
+
+.output-line-error {
+  color: var(--color-error);
+}
+
+.output-line-success {
+  color: var(--color-success);
+}
+
+.output-panel-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.output-panel-tabs button {
+  font: inherit;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.output-panel-tabs button:hover {
+  color: var(--text-h);
+}
+
+.output-panel-tabs button.active {
+  color: var(--text-h);
+  background: var(--bg-hover);
+  border-color: var(--border);
+}
+
+.search-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+  padding: 6px 10px 10px;
+}
+
+.search-panel-bar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.search-panel-bar input[type="text"],
+.search-panel-bar input:not([type]) {
+  flex: 1 1 160px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-input);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.search-panel-bar .search-mask-input {
+  flex: 0 1 140px;
+}
+
+.search-panel-bar button {
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-button);
+  background: var(--bg-button);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.search-panel-bar button:hover:not(:disabled) {
+  background: var(--bg-button-hover);
+}
+
+.search-panel-bar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.search-case-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.search-panel-status {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.8;
+}
+
+.search-panel-results {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.search-result-group {
+  margin-bottom: 6px;
+}
+
+.search-result-file {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-h);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.search-result-file:hover {
+  color: var(--accent);
+}
+
+.search-result-chevron {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 1em;
+  opacity: 0.7;
+}
+
+.search-result-count {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.search-result-line {
+  display: flex;
+  gap: 8px;
+  padding: 1px 0 1px 18px;
+  cursor: pointer;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-line:hover {
+  background: var(--bg-hover);
+}
+
+.search-result-lineno {
+  flex: 0 0 auto;
+  opacity: 0.6;
+  min-width: 2.5em;
+  text-align: right;
+}
+
+.search-classic-results {
+  overflow: auto;
+}
+
+.search-classic-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.search-classic-table th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  font-family: var(--sans);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-h);
+  background: var(--bg);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-classic-table td {
+  padding: 2px 8px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-classic-table tr {
+  cursor: pointer;
+}
+
+.search-classic-table tr:hover td {
+  background: var(--bg-hover);
+}
+
+.search-classic-doc {
+  color: var(--text-h);
+}
+
+.search-classic-line {
+  opacity: 0.6;
+  text-align: right;
+}
+
+.search-classic-text {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Highlights every use of a method parameter inside its body with the same color as its
+   declaration (see src/monaco/parameterHighlight.ts — the TextMate grammar alone can't do this). */
+.cm-param-usage {
+  color: var(--color-parameter) !important;
+  font-style: var(--style-parameter, normal);
+}
