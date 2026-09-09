@@ -65,8 +65,21 @@ fn iris_tools() -> Value {
     json!([
         {
             "name": "list_documents",
-            "description": "Lista as classes e rotinas ObjectScript existentes no namespace conectado.",
-            "inputSchema": { "type": "object", "properties": {} },
+            "description": "Lista as classes e rotinas ObjectScript existentes no namespace conectado. \
+                Sem argumentos, retorna um RESUMO por pacote (nome do pacote + quantidade de documentos) — \
+                use isso primeiro para se situar. Para ver os documentos de um pacote específico (ex: todos \
+                os arquivos do pacote 'Wiki'), chame de novo passando 'filter' com o nome do pacote ou um \
+                trecho do nome do documento.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "filter": {
+                        "type": "string",
+                        "description": "Pacote ou trecho do nome para filtrar (ex: 'Wiki'). Sem isso, retorna \
+                            só o resumo por pacote em vez da lista completa.",
+                    },
+                },
+            },
         },
         {
             "name": "read_document",
@@ -154,10 +167,18 @@ const READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(50);
 
 fn call_iris_tool(bridge: &Bridge, name: &str, args: &Value) -> Value {
     match name {
-        "list_documents" => match bridge.fetch("GET", "/documents", None, Some(READ_TIMEOUT)) {
-            Ok(docs) => text_content(docs.to_string()),
-            Err(e) => error_content(e),
-        },
+        "list_documents" => {
+            let filter = args.get("filter").and_then(|v| v.as_str()).unwrap_or("");
+            let path = if filter.is_empty() {
+                "/documents".to_string()
+            } else {
+                format!("/documents?filter={}", urlencoding::encode(filter))
+            };
+            match bridge.fetch("GET", &path, None, Some(READ_TIMEOUT)) {
+                Ok(docs) => text_content(docs.to_string()),
+                Err(e) => error_content(e),
+            }
+        }
         "read_document" => {
             let name = args.get("name").and_then(|v| v.as_str()).unwrap_or("");
             match bridge.fetch(

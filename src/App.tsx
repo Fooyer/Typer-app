@@ -51,6 +51,12 @@ if (
   );
 }
 
+/** Height the output panel eases down to when collapsed — its header row (tabs + actions) plus a
+ * little breathing room below, so the buttons' own bottom padding/border reads as a margin instead
+ * of sitting flush against the window edge. A few px taller than `.output-panel-header`'s own
+ * rendered height in style.css (padding + the row of small buttons + border-bottom). */
+const OUTPUT_COLLAPSED_HEIGHT = 48;
+
 const SAMPLE = `Class Demo.Hello Extends %RegisteredObject
 {
 
@@ -111,6 +117,7 @@ function App() {
   const [diagnostics, setDiagnostics] = useState<Record<string, Diagnostic[]>>({});
   const [panelOpen, setPanelOpen] = useState(true);
   const [outputOpen, setOutputOpen] = useState(true);
+  const [outputResizing, setOutputResizing] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const [outputHeight, setOutputHeight] = useState(200);
   const [logLines, setLogLines] = useState<LogLine[]>([]);
@@ -1056,6 +1063,9 @@ function App() {
     const startHeight = outputHeight;
     document.body.style.cursor = "row-resize";
     document.body.style.userSelect = "none";
+    // The container's height now eases in/out on collapse — that transition would otherwise fight
+    // a live drag (each mousemove's height lagging behind the cursor), so suspend it for the drag.
+    setOutputResizing(true);
 
     function onMove(moveEvent: MouseEvent) {
       setOutputHeight(Math.min(600, Math.max(80, startHeight - (moveEvent.clientY - startY))));
@@ -1063,6 +1073,7 @@ function App() {
     function onUp() {
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
+      setOutputResizing(false);
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     }
@@ -1520,58 +1531,45 @@ function App() {
                 </div>
               ))}
           </div>
-          {outputOpen ? (
-            <>
-              <div className="resize-handle resize-handle-y" onMouseDown={startOutputResize} />
-              <div className="output-container" style={{ height: outputHeight }}>
-                <OutputPanel
-                  lines={logLines}
-                  onClear={() => setLogLines([])}
-                  activeTab={outputTab}
-                  onActiveTabChange={setOutputTab}
-                  search={{
-                    query: searchQuery,
-                    onQueryChange: setSearchQuery,
-                    mask: searchMask,
-                    onMaskChange: setSearchMask,
-                    caseSensitive: searchCaseSensitive,
-                    onCaseSensitiveChange: setSearchCaseSensitive,
-                    onSearch: () => void runFindInFiles(),
-                    onCancel: cancelSearch,
-                    running: searchRunning,
-                    status: searchStatus,
-                    results: searchResults,
-                    onOpenResult: (docName, line) => void openSearchResult(docName, line),
-                    focusToken: searchFocusToken,
-                  }}
-                  onHide={() => setOutputOpen(false)}
-                />
-              </div>
-            </>
-          ) : (
-            // Collapsed strip stays visible so reopening never requires the View menu or a
-            // shortcut — clicking either tab both restores the panel and selects that tab.
-            <div className="output-collapsed-bar">
-              <button
-                type="button"
-                onClick={() => {
-                  setOutputTab("log");
-                  setOutputOpen(true);
-                }}
-              >
-                Saída
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setOutputTab("search");
-                  setOutputOpen(true);
-                }}
-              >
-                Pesquisar{searchResults.length > 0 ? ` (${searchResults.length})` : ""}
-              </button>
-            </div>
+          {outputOpen && (
+            <div className="resize-handle resize-handle-y" onMouseDown={startOutputResize} />
           )}
+          <div
+            className="output-container"
+            style={{
+              height: outputOpen ? outputHeight : OUTPUT_COLLAPSED_HEIGHT,
+              transition: outputResizing ? "none" : "height 0.18s ease",
+            }}
+          >
+            <OutputPanel
+              lines={logLines}
+              onClear={() => setLogLines([])}
+              activeTab={outputTab}
+              // Picking a tab while collapsed also reopens the panel — same one-click reopen the
+              // old separate collapsed bar gave, just without swapping in a different component.
+              onActiveTabChange={(tab) => {
+                setOutputTab(tab);
+                setOutputOpen(true);
+              }}
+              search={{
+                query: searchQuery,
+                onQueryChange: setSearchQuery,
+                mask: searchMask,
+                onMaskChange: setSearchMask,
+                caseSensitive: searchCaseSensitive,
+                onCaseSensitiveChange: setSearchCaseSensitive,
+                onSearch: () => void runFindInFiles(),
+                onCancel: cancelSearch,
+                running: searchRunning,
+                status: searchStatus,
+                results: searchResults,
+                onOpenResult: (docName, line) => void openSearchResult(docName, line),
+                focusToken: searchFocusToken,
+              }}
+              collapsed={!outputOpen}
+              onToggleCollapsed={() => setOutputOpen((open) => !open)}
+            />
+          </div>
         </div>
       </div>
 

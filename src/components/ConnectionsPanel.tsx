@@ -594,7 +594,7 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
                   checked={showSystemFiles}
                   onChange={(event) => setShowSystemFiles(event.target.checked)}
                 />
-                Mostrar arquivos do sistema (Ens*, CSPX, .mac, .inc)
+                Mostrar arquivos do sistema (Ens*, CSPX, %*, /csp/, .mac, .inc, .dfi, .x12, sem extensão)
               </label>
               <FileExplorer
                 ref={fileExplorerRef}

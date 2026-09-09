@@ -254,7 +254,13 @@ async fn route(
     if method == "GET" && path == "/documents" {
         let docs =
             with_route_timeout(atelier::list_documents(&session.config, &session.namespace, false)).await?;
-        return Ok((200, serde_json::to_value(docs).unwrap()));
+        let filter = form_query(query).get("filter").cloned().unwrap_or_default();
+        if filter.is_empty() {
+            return Ok((200, package_summary(&docs)));
+        }
+        let needle = filter.to_lowercase();
+        let matches: Vec<_> = docs.into_iter().filter(|d| d.name.to_lowercase().contains(&needle)).collect();
+        return Ok((200, serde_json::to_value(matches).unwrap()));
     }
     if method == "GET" && path.starts_with("/documents/") {
         let name = urlencoding::decode(&path["/documents/".len()..]).map_err(|e| e.to_string())?.into_owned();
@@ -319,6 +325,45 @@ async fn route(
         return Ok((200, serde_json::to_value(result).unwrap()));
     }
     Ok((404, serde_json::json!({ "error": "Rota desconhecida." })))
+}
+
+/// The package a document lives under, using the same segmentation the Explorer's tree view uses
+/// (see `src/utils/documentTree.ts`): dot segments for `.cls` (minus the class name itself), the
+/// first "/" segment for CSP paths, and a catch-all bucket for flat routines (`.mac`/`.int`/`.inc`
+/// have no InterSystems-defined nesting).
+fn package_of(name: &str) -> String {
+    if name.to_lowercase().ends_with(".cls") {
+        let without_ext = &name[..name.len() - 4];
+        match without_ext.rsplit_once('.') {
+            Some((pkg, _)) => pkg.to_string(),
+            None => "(sem pacote)".to_string(),
+        }
+    } else if let Some((first, _)) = name.split_once('/') {
+        first.to_string()
+    } else {
+        "(rotinas)".to_string()
+    }
+}
+
+/// A namespace can hold thousands of documents — dumping them all as one flat JSON blob is what a
+/// bare `list_documents` call used to do, and it reliably overran the agent's own tool-output
+/// handling (each entry on one giant line no local text tool could search or fully read back). This
+/// gives the agent a compact map of the namespace instead: one row per package with a count, so it
+/// can decide which package to drill into with `list_documents(filter: "PackageName")` rather than
+/// wading through everything at once.
+fn package_summary(docs: &[atelier::AtelierDocNameEntry]) -> serde_json::Value {
+    let mut counts: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    for doc in docs {
+        *counts.entry(package_of(&doc.name)).or_insert(0) += 1;
+    }
+    let packages: Vec<_> =
+        counts.into_iter().map(|(package, count)| serde_json::json!({ "package": package, "count": count })).collect();
+    serde_json::json!({
+        "totalDocuments": docs.len(),
+        "packages": packages,
+        "note": "Resumo por pacote. Para ver os documentos de um pacote específico, chame list_documents \
+            de novo com o argumento 'filter' (ex: filter: \"Wiki\").",
+    })
 }
 
 fn form_query(query: &str) -> HashMap<String, String> {

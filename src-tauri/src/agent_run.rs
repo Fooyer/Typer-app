@@ -161,6 +161,38 @@ Isso é essencial em tarefas longas: o usuário está vendo essas mensagens cheg
 silêncio prolongado parece uma travada mesmo quando você só está processando um pedido grande —
 prefira reportar demais a reportar de menos. Se surgir uma subtarefa nova no meio do caminho,
 adicione-a à checklist no próximo envio em vez de omiti-la.
+
+## 4. Formate as respostas para leitura fácil
+
+Depois de investigar (`iris_list_documents`/`iris_read_document`), NUNCA devolva o resultado como um
+parágrafo único e denso, com informação empilhada por dois-pontos e vírgulas. Estruture:
+
+- Comece com uma frase curta dizendo o que é o projeto/componente.
+- Liste as partes/funcionalidades principais em tópicos (`-`), uma por linha — não espremidas numa
+  única frase separada por vírgula.
+- Use `código` para nomes de classes, pacotes, rotas e ferramentas (ex: `Wiki.UI`, `/csp/wiki`).
+- Se houver partes claramente distintas (ex: backend vs frontend, ou funcionalidades
+  independentes), separe cada uma em seu próprio tópico ou sub-seção (`##`/`###`) — não junte tudo.
+- Prefira uma resposta um pouco mais longa e organizada a uma resposta curta e densa: o usuário vai
+  ler isso com calma, não só escanear.
+
+Exemplo — em vez de responder assim:
+
+> Wiki de conhecimento em Markdown rodando 100% em IRIS (pacote Wiki): CRUD de páginas via REST
+> (/csp/wiki), renderização Markdown→HTML, busca e histórico/backlinks, cache+ETag, e chat com IA
+> (RAG via embeddings no Ollama + resposta do servidor opencode). Front em HTML/JS gerado por
+> Wiki.UI.
+
+responda assim:
+
+> **Wiki de conhecimento em Markdown, 100% dentro do IRIS** (pacote `Wiki`).
+>
+> - **API REST** (`/csp/wiki`) — CRUD de páginas.
+> - **Renderização** — Markdown → HTML.
+> - **Busca e navegação** — busca full-text, histórico de versões e backlinks entre páginas.
+> - **Performance** — cache com ETag.
+> - **Chat com IA** — RAG usando embeddings via Ollama, resposta gerada pelo servidor opencode.
+> - **Frontend** — HTML/JS servido por `Wiki.UI`.
 "#
     )
 }

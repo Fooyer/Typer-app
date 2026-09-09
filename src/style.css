@@ -2815,7 +2815,7 @@ button.update-pill-ready:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 10px;
+  padding: 6px 10px;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2856,39 +2856,16 @@ button.update-pill-ready:hover {
   gap: 4px;
 }
 
-.output-panel-hide svg {
+.output-panel-hide-icon {
   flex: 0 0 auto;
   display: block;
+  transition: transform 0.18s ease;
 }
 
-/* Replaces the output panel while it's hidden — kept at all times so reopening it is one click,
-   not a trip to the View menu or a shortcut. Mirrors .output-panel-tabs' look so it reads as "the
-   same tabs, just collapsed" rather than a different control. */
-.output-collapsed-bar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: stretch;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-}
-
-.output-collapsed-bar button {
-  font: inherit;
-  font-size: 11px;
-  color: var(--text);
-  background: none;
-  border: none;
-  border-right: 1px solid var(--border);
-  padding: 5px 14px;
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.output-collapsed-bar button:hover {
-  background: var(--bg-hover);
-  color: var(--text-h);
+/* Collapsed = pointing "up" (there's more to show above the fold), open = pointing "down" — the
+   same chevron just flips, echoing the panel's own collapse/expand instead of swapping icons. */
+.output-panel-hide-icon.collapsed {
+  transform: rotate(180deg);
 }
 
 .output-panel-body {

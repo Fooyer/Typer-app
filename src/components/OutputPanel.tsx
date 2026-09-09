@@ -33,7 +33,11 @@ interface OutputPanelProps {
   activeTab: OutputTab;
   onActiveTabChange: (tab: OutputTab) => void;
   search: SearchPanelState;
-  onHide?: () => void;
+  /** Whether the body below the header is collapsed. The header (tabs + actions) stays mounted and
+   * in place either way — only the toggle's own label/icon and the `Limpar` button react to it —
+   * so hiding/showing never swaps in a different bar. */
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 }
 
 function OutputPanel({
@@ -42,7 +46,8 @@ function OutputPanel({
   activeTab,
   onActiveTabChange,
   search,
-  onHide,
+  collapsed,
+  onToggleCollapsed,
 }: OutputPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -70,31 +75,35 @@ function OutputPanel({
           </button>
         </div>
         <div className="output-panel-header-actions">
-          {activeTab === "log" && (
+          {!collapsed && activeTab === "log" && (
             <button type="button" onClick={onClear}>
               Limpar
             </button>
           )}
-          {onHide && (
-            <button
-              type="button"
-              className="output-panel-hide"
-              onClick={onHide}
-              title="Ocultar painel de saída"
+          <button
+            type="button"
+            className="output-panel-hide"
+            onClick={onToggleCollapsed}
+            title={collapsed ? "Mostrar painel de saída" : "Ocultar painel de saída"}
+          >
+            <svg
+              className={collapsed ? "output-panel-hide-icon collapsed" : "output-panel-hide-icon"}
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              aria-hidden="true"
             >
-              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-                <path
-                  d="M1.5 3.5l3.5 3.5 3.5-3.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Ocultar
-            </button>
-          )}
+              <path
+                d="M1.5 3.5l3.5 3.5 3.5-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {collapsed ? "Mostrar" : "Ocultar"}
+          </button>
         </div>
       </div>
       <div
