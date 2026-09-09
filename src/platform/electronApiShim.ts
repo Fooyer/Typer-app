@@ -7,6 +7,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { check as checkForUpdate, type Update } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import type {
   AgentDone,
   AgentEvent,
@@ -25,6 +27,7 @@ import type {
   SpecFileEntry,
   StudioMenu,
   StudioUserAction,
+  UpdaterStatus,
   WriteResolution,
 } from "./types";
 
@@ -60,6 +63,20 @@ function bridgeEvent<T>(eventName: string, callback: (payload: T) => void): () =
 
 const appWindow = getCurrentWindow();
 
+/** Holds the `Update` handle from the last successful `check()` so `install()` (called later, from a
+ * separate button click) knows what to download — mirrors electron-updater keeping that state on the
+ * main-process singleton instead of round-tripping it through the renderer. */
+let pendingUpdate: Update | null = null;
+const updateStatusListeners = new Set<(status: UpdaterStatus) => void>();
+
+function emitUpdateStatus(status: UpdaterStatus): void {
+  updateStatusListeners.forEach((listener) => listener(status));
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 // Espelha `forceCloseWindows` de electron/ipc.ts: distingue a primeira tentativa de fechar (deve
 // avisar sobre abas não salvas) de um fechamento já confirmado pelo usuário. Diferente do Electron,
 // aqui a interceptação inteira acontece no próprio WebView — `onCloseRequested` do Tauri já permite
@@ -93,12 +110,60 @@ function contextBridgeShim(): void {
         await appWindow.close();
       },
     },
-    // Auto-update fica para uma fase futura (ver plano de migração) — sem servidor de update
-    // configurado ainda, então check()/install() são no-ops e onStatus nunca dispara.
+    // Checa releases publicados no GitHub (ver .github/workflows/release.yml e
+    // tauri.conf.json's plugins.updater.endpoints) — equivalente ao `autoUpdater` do
+    // electron-updater com o provider "github", só que via tauri-plugin-updater.
     updater: {
-      check: async () => {},
-      install: async () => {},
-      onStatus: (_callback) => () => {},
+      // Mirrors the old electron-updater flow: checking an available update downloads it right
+      // away, silently, in the background — the caller (App.tsx) only needs to prompt the user
+      // once `onStatus` reports "downloaded". `install()` is the one step that stays manual.
+      check: async () => {
+        emitUpdateStatus({ state: "checking" });
+        try {
+          const update = await checkForUpdate();
+          if (!update) {
+            pendingUpdate = null;
+            emitUpdateStatus({ state: "not-available" });
+            return;
+          }
+          pendingUpdate = update;
+          emitUpdateStatus({ state: "available", version: update.version });
+          let totalBytes = 0;
+          let downloadedBytes = 0;
+          await update.download((event) => {
+            if (event.event === "Started") {
+              totalBytes = event.data.contentLength ?? 0;
+              downloadedBytes = 0;
+              emitUpdateStatus({ state: "downloading", percent: 0 });
+            } else if (event.event === "Progress") {
+              downloadedBytes += event.data.chunkLength;
+              const percent = totalBytes > 0 ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100)) : 0;
+              emitUpdateStatus({ state: "downloading", percent });
+            } else if (event.event === "Finished") {
+              emitUpdateStatus({ state: "downloaded", version: update.version });
+            }
+          });
+        } catch (error) {
+          emitUpdateStatus({ state: "error", message: errorMessage(error) });
+        }
+      },
+      install: async () => {
+        const update = pendingUpdate;
+        if (!update) return;
+        try {
+          // Already downloaded by check() above — this just runs the installer.
+          await update.install();
+          // No-op on Windows (install() already exits the app to run the installer) — required on
+          // macOS/Linux, where the new version only takes over on the next launch.
+          await relaunch();
+        } catch (error) {
+          emitUpdateStatus({ state: "error", message: errorMessage(error) });
+        }
+      },
+      onStatus: (callback) => {
+        updateStatusListeners.add(callback);
+        return () => updateStatusListeners.delete(callback);
+      },
     },
     connections: {
       list: () => call<ConnectionProfile[]>("connections_list"),

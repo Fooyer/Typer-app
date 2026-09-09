@@ -15,6 +15,10 @@ dist-ssr
 # Tauri sidecar binaries (build artifacts / vendored executables)
 src-tauri/binaries/
 
+# Updater signing keypair — the public half is copied into tauri.conf.json's `plugins.updater.pubkey`
+# by hand, so neither file here needs to be (or should be) committed.
+.tauri-updater-keys/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -57,6 +57,9 @@ if (
  * rendered height in style.css (padding + the row of small buttons + border-bottom). */
 const OUTPUT_COLLAPSED_HEIGHT = 48;
 
+/** How often to re-check GitHub Releases for a new version, on top of the check on startup. */
+const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
+
 const SAMPLE = `Class Demo.Hello Extends %RegisteredObject
 {
 
@@ -217,12 +220,12 @@ function App() {
     });
   }, []);
 
-  // main.ts's updater.ts checks for updates on startup and every few hours, downloading silently in
-  // the background — this just reflects that progress in the titlebar and surfaces the result, so the
-  // user only ever has to act once a new version is actually ready (see the update pill below).
+  // Checks for updates on startup and every few hours, downloading silently in the background —
+  // this just reflects that progress in the titlebar and surfaces the result, so the user only ever
+  // has to act once a new version is actually ready (see the update pill below).
   useEffect(() => {
     if (!hasElectronAPI) return;
-    return window.electronAPI.updater.onStatus((status) => {
+    const unsubscribe = window.electronAPI.updater.onStatus((status) => {
       setUpdateStatus(status);
       if (status.state === "available")
         appendLog(`Nova versão ${status.version} encontrada, baixando…`, "info");
@@ -231,6 +234,12 @@ function App() {
       if (status.state === "error")
         appendLog(`Erro ao verificar atualizações: ${status.message}`, "error");
     });
+    void window.electronAPI.updater.check();
+    const interval = setInterval(() => void window.electronAPI.updater.check(), UPDATE_CHECK_INTERVAL_MS);
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
