@@ -7,6 +7,7 @@ import {
 import { registerObjectScriptCompletion } from "../monaco/objectscript-completion";
 import {
   extractClassNameAt,
+  extractMethodReferenceAt,
   goToClassReference,
   registerObjectScriptDefinition,
 } from "../monaco/classReferenceNavigation";
@@ -93,6 +94,11 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function CodeEd
           const model = ed.getModel();
           const position = ed.getPosition();
           if (!model || !position) return;
+          const methodRef = extractMethodReferenceAt(model, position);
+          if (methodRef) {
+            goToClassReference(methodRef.className, methodRef.methodName);
+            return;
+          }
           const className = extractClassNameAt(model, position);
           if (className) goToClassReference(className);
         },

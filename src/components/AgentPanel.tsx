@@ -17,7 +17,7 @@ import {
   loadActiveSessionId,
   saveActiveSessionId,
 } from "../utils/agentSession";
-import { loadAiPreference, AI_PROVIDERS } from "../utils/aiPreference";
+import { loadAiPreference, onAiPreferenceChange, AI_PROVIDERS } from "../utils/aiPreference";
 import { loadSpecsDirOverride } from "../utils/specsPreference";
 import type { LogLevel } from "./OutputPanel";
 
@@ -188,8 +188,12 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
     loadActiveSessionId(connectionId, namespace),
   );
   // Which provider/model the agent will run with — from the non-secret renderer preference
-  // (the API key itself lives in the main process; see aiPreference.ts / aiSettings.ts).
-  const [aiPreference] = useState(() => loadAiPreference());
+  // (the API key itself lives in the main process; see aiPreference.ts / aiSettings.ts). Refreshed
+  // on every save (not just read once at mount) — this panel is typically already mounted when the
+  // user opens Settings and changes the provider, and a stale value here would keep showing (and
+  // running with) whatever was current when the tab first opened.
+  const [aiPreference, setAiPreference] = useState(() => loadAiPreference());
+  useEffect(() => onAiPreferenceChange(setAiPreference), []);
   // The rail's two drawers (code changes the agent proposed, and past chats) — the chat itself
   // stays on the left; this right-side rail only claims width while one is open. At most one open
   // at a time, like tabs.

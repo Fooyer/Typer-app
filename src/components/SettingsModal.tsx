@@ -448,8 +448,10 @@ function SettingsModal({
                     })}
                     <p className="settings-hint">
                       Provedores suportados: Claude/Anthropic, Gemini/Google, OpenAI e OpenRouter
-                      (além do provedor padrão do opencode). A chave é passada ao opencode apenas
-                      no momento da execução, via variável de ambiente.
+                      (além do provedor padrão do opencode). A chave fica só neste computador e é
+                      usada para chamar a API do provedor diretamente (ex.: Anthropic, Google) — o
+                      opencode aqui é só o executor local do agente, a chamada não passa por
+                      nenhum servidor do opencode.
                     </p>
                   </div>
                   <div className="settings-actions">

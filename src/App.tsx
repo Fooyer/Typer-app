@@ -30,7 +30,8 @@ import { mapWithConcurrency } from "./utils/concurrency";
 import { classSourceToExportXml } from "./utils/classXmlExport";
 import { downloadTextFile } from "./utils/download";
 import { loadThemePreference, saveThemePreference } from "./utils/themePreference";
-import { setClassReferenceOpener } from "./monaco/classReferenceNavigation";
+import { findMethodLine, setClassReferenceOpener } from "./monaco/classReferenceNavigation";
+import { parseSuperclasses } from "./monaco/objectscriptTypeResolver";
 import { getKnownClasses } from "./monaco/classIndex";
 import { setClassMemberProvider, type ClassMember } from "./monaco/classMembers";
 import { setTypeParameterProvider } from "./monaco/typeParameters";
@@ -363,6 +364,7 @@ function App() {
     namespace: string,
     name: string,
     content: string,
+    methodName?: string,
   ) {
     const existing = tabs.find(
       (tab) =>
@@ -370,6 +372,10 @@ function App() {
     );
     if (existing) {
       setActiveTabId(existing.id);
+      if (methodName) {
+        const line = findMethodLine(existing.content, methodName);
+        if (line) requestAnimationFrame(() => codeEditorRef.current?.revealLine(existing.id, line));
+      }
       return;
     }
     const id = `doc-${nextTabId.current++}`;
@@ -389,9 +395,79 @@ function App() {
     setActiveTabId(id);
     appendLog(`${name} aberto (${namespace}).`, "success");
     applyReadOnlyStatus(id, connectionId, namespace, name);
+    if (methodName) {
+      const line = findMethodLine(content, methodName);
+      if (line) requestAnimationFrame(() => codeEditorRef.current?.revealLine(id, line));
+    }
   }
 
-  async function openClassByName(className: string) {
+  /** Walks up `className`'s `Extends` chain (breadth-first, one visit per class) looking for a
+   * class that declares `methodName` directly — so F12 on `..Method`/`##class(X).Method` still
+   * finds it when it's actually inherited (e.g. `%PurgeIndices`/`%BuildIndices` from
+   * `%Persistent`), not just when `className` declares it itself. Reuses an already-open tab's
+   * content instead of refetching it. Best-effort: a superclass with no fetchable source (a
+   * compiled-only system class, a typo, no permission) is skipped rather than aborting the search. */
+  async function findMethodOwner(
+    connectionId: string,
+    namespace: string,
+    className: string,
+    methodName: string,
+  ): Promise<{ className: string; content: string } | null> {
+    const visited = new Set<string>();
+    const queue: string[] = [className];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const key = current.toLowerCase();
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      const openTab = tabs.find(
+        (tab) =>
+          tab.connectionId === connectionId &&
+          tab.namespace === namespace &&
+          tab.docName === `${current}.cls`,
+      );
+      let resolvedName = current;
+      let content: string;
+      if (openTab) {
+        content = openTab.content;
+      } else {
+        const fetched = await fetchClassSourceWithSystemAlias(connectionId, namespace, current);
+        if (!fetched) continue;
+        resolvedName = fetched.resolvedName;
+        content = fetched.content;
+      }
+
+      if (findMethodLine(content, methodName)) return { className: resolvedName, content };
+      queue.push(...parseSuperclasses(content));
+    }
+    return null;
+  }
+
+  /** `Extends %Persistent` etc. is a compiler shorthand — the document is actually stored as
+   * `%Library.Persistent.cls`, so a bare `%Name` superclass that 404s on its own name gets one
+   * retry under `%Library.<Name>` before `findMethodOwner` gives up on that branch. */
+  async function fetchClassSourceWithSystemAlias(
+    connectionId: string,
+    namespace: string,
+    className: string,
+  ): Promise<{ resolvedName: string; content: string } | null> {
+    try {
+      const doc = await window.electronAPI.atelier.getDocument(connectionId, namespace, `${className}.cls`);
+      return { resolvedName: className, content: doc.content.join("\n") };
+    } catch {
+      if (!/^%[^.]+$/.test(className)) return null;
+      const qualified = `%Library.${className.slice(1)}`;
+      try {
+        const doc = await window.electronAPI.atelier.getDocument(connectionId, namespace, `${qualified}.cls`);
+        return { resolvedName: qualified, content: doc.content.join("\n") };
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  async function openClassByName(className: string, methodName?: string) {
     if (!hasElectronAPI) return;
     const context = getActiveServerContext();
     if (!context?.connectionId || !context.namespace) {
@@ -402,21 +478,43 @@ function App() {
       return;
     }
     const { connectionId, namespace } = context;
-    const docName = `${className}.cls`;
+
+    let targetClassName = className;
+    let ownerContent: string | null = null;
+    if (methodName) {
+      const owner = await findMethodOwner(connectionId, namespace, className, methodName);
+      if (owner) {
+        targetClassName = owner.className;
+        ownerContent = owner.content;
+      } else {
+        appendLog(
+          `Método "${methodName}" não encontrado em ${className} nem em suas classes-mãe.`,
+          "error",
+        );
+      }
+    }
+
+    const docName = `${targetClassName}.cls`;
     const existing = tabs.find(
       (tab) =>
         tab.connectionId === connectionId && tab.namespace === namespace && tab.docName === docName,
     );
     if (existing) {
       setActiveTabId(existing.id);
+      if (methodName) {
+        const line = findMethodLine(existing.content, methodName);
+        if (line) requestAnimationFrame(() => codeEditorRef.current?.revealLine(existing.id, line));
+      }
       return;
     }
-    appendLog(`Abrindo definição de ${className}…`);
+    appendLog(`Abrindo definição de ${targetClassName}…`);
     try {
-      const doc = await window.electronAPI.atelier.getDocument(connectionId, namespace, docName);
-      handleOpenDocument(connectionId, namespace, docName, doc.content.join("\n"));
+      const content =
+        ownerContent ??
+        (await window.electronAPI.atelier.getDocument(connectionId, namespace, docName)).content.join("\n");
+      handleOpenDocument(connectionId, namespace, docName, content, methodName);
     } catch (error) {
-      appendLog(`Não foi possível abrir "${className}": ${(error as Error).message}`, "error");
+      appendLog(`Não foi possível abrir "${targetClassName}": ${(error as Error).message}`, "error");
     }
   }
 
@@ -1107,7 +1205,7 @@ function App() {
   }, [activeTab]);
 
   useEffect(() => {
-    setClassReferenceOpener((className) => void openClassByName(className));
+    setClassReferenceOpener((className, methodName) => void openClassByName(className, methodName));
     return () => setClassReferenceOpener(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, tabs]);

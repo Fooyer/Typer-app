@@ -160,7 +160,28 @@ Não use ferramentas de arquivo local (read/write/edit/bash) para nada disso —
 projeto é só configuração, tanto o código quanto as specs são acessados exclusivamente pelas
 ferramentas MCP acima.
 
-## 3. Narre o progresso com uma checklist
+## 3. Escreva código limpo (Clean Code)
+
+Todo código que você propor (`iris_propose_write`) segue princípios de Clean Code, sempre — o
+objetivo é que dê para entender o que o código faz só de olhar para ele, sem precisar de explicação
+por fora. Isso é o padrão default em qualquer projeto, não algo que precisa ser pedido:
+
+- Nomes de classes, métodos, variáveis e propriedades dizem o que são/fazem — nada de nomes
+  genéricos (`tmp`, `x`, `Util2`) quando um nome descritivo cabe.
+- Métodos curtos, com uma responsabilidade clara cada um — extraia um método quando um bloco já faz
+  algo logicamente separado do resto.
+- Estrutura e nomes claros em vez de comentários explicando "o que" o código faz. Comente só o
+  "porquê" quando não for óbvio (uma decisão não intuitiva, uma limitação do IRIS, um workaround).
+- Padrão visual consistente (indentação, chaves, espaçamento) com o resto da classe/namespace — não
+  misture estilos dentro do mesmo arquivo.
+
+Sempre que você adotar ou perceber um padrão de código ou estrutural relevante para este projeto
+(convenção de nomes, forma de organizar pacotes/métodos, padrão arquitetural), registre isso nas
+specs (`specs_write`) — não fique só implícito no código. As specs devem acompanhar tanto o
+progresso das tarefas quanto os padrões de código/estrutura que o projeto vem seguindo, atualizando
+sempre que eles mudarem ou surgir um novo.
+
+## 4. Narre o progresso com uma checklist
 
 Para qualquer tarefa com mais de um passo óbvio (e principalmente para pedidos grandes/complexos),
 comece respondendo com uma checklist curta em markdown listando as subtarefas que você identificou,
@@ -179,7 +200,7 @@ silêncio prolongado parece uma travada mesmo quando você só está processando
 prefira reportar demais a reportar de menos. Se surgir uma subtarefa nova no meio do caminho,
 adicione-a à checklist no próximo envio em vez de omiti-la.
 
-## 4. Formate as respostas para leitura fácil
+## 5. Formate as respostas para leitura fácil
 
 Depois de investigar (`iris_list_documents`/`iris_read_document`), NUNCA devolva o resultado como um
 parágrafo único e denso, com informação empilhada por dois-pontos e vírgulas. Estruture:
@@ -321,8 +342,16 @@ pub async fn agent_run(
         "--thinking".into(),
     ];
     if let Some(model) = &model {
+        // opencode's `--model` expects `provider/model` (bare ids fail with an opaque
+        // "UnknownError" instead of a clear message) — the settings UI only collects the bare id,
+        // so prefix it with the selected provider here when it isn't already qualified.
+        let qualified = if ai.provider_id != "default" && !model.contains('/') {
+            format!("{}/{model}", ai.provider_id)
+        } else {
+            model.clone()
+        };
         args.push("--model".into());
-        args.push(model.clone());
+        args.push(qualified);
     }
     if let Some(session_id) = &session_id {
         args.push("--session".into());
@@ -486,6 +515,15 @@ pub async fn model_list(provider_id: Option<String>) -> Vec<String> {
     cmd.arg("models");
     if let Some(provider) = provider_id.as_deref().filter(|p| !p.is_empty()) {
         cmd.arg(provider);
+        // opencode only reports a provider as configured (and lists its models) once it can see
+        // an API key for it — without this the CLI always answers "Provider not found" for
+        // anthropic/google/openai/openrouter, even with a key saved in this app's keyring, because
+        // that key was never forwarded to this subprocess's environment.
+        if let (Some(env_var), Some(api_key)) =
+            (crate::ai_settings::provider_env_var(provider), crate::ai_settings::get_api_key(provider))
+        {
+            cmd.env(env_var, api_key);
+        }
     }
     let output = match tokio::time::timeout(std::time::Duration::from_secs(10), cmd.output()).await {
         Ok(Ok(output)) => output,

@@ -4,8 +4,10 @@
 const IGNORED_PACKAGE_PREFIXES = ["ens.", "ens-", "enslib.", "ensportal.", "cspx.", "%", "/csp/"];
 // .DFI (Ens Analytics dashboard definitions) and .X12 (bundled HIPAA/EDI schema lookup tables) are
 // interoperability framework assets that ship by default wherever Ensemble/Interoperability is
-// enabled — never something written by hand in Studio/Atelier.
-const IGNORED_EXTENSIONS = new Set(["mac", "inc", "dfi", "x12"]);
+// enabled — never something written by hand in Studio/Atelier. .INT is the compiled intermediate
+// code IRIS generates for every .cls/.mac routine — one per source document, never authored by
+// hand, so it'd otherwise double every real entry in the tree.
+const IGNORED_EXTENSIONS = new Set(["mac", "inc", "dfi", "x12", "int"]);
 
 export function isNoiseDocument(name: string): boolean {
   const lower = name.toLowerCase();

@@ -60,6 +60,34 @@ export function parseCurrentClassName(model: Monaco.editor.ITextModel): string |
   return null;
 }
 
+/** A class's direct superclasses, from its `Class Package.Name Extends (A, B)` (or single-name,
+ * no-parens) header — used to walk up the inheritance chain when "go to definition" on a method
+ * doesn't find it declared directly on the class it was called through (e.g. `%PurgeIndices` isn't
+ * on the persistent class itself, it's inherited from `%Persistent`). Handles a header that wraps
+ * onto more than one line before the class body's opening `{`. */
+export function parseSuperclasses(content: string): string[] {
+  const lines = content.split("\n");
+  const classLineIndex = lines.findIndex((line) => CLASS_DECLARATION.test(line));
+  if (classLineIndex === -1) return [];
+
+  let header = "";
+  for (let i = classLineIndex; i < lines.length; i++) {
+    const line = lines[i];
+    const braceIndex = line.indexOf("{");
+    header += braceIndex >= 0 ? line.slice(0, braceIndex) : line;
+    header += " ";
+    if (braceIndex >= 0) break;
+  }
+
+  const match = /\bExtends\s*(?:\(([^)]*)\)|([%\p{L}_][\p{L}\p{N}_.]*))/u.exec(header);
+  if (!match) return [];
+  const raw = match[1] ?? match[2] ?? "";
+  return raw
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
 /**
  * Best-effort lookup of a variable's declared ObjectScript class, so `variable.` completion can
  * offer that class's members. ObjectScript has no static typing at the language level, so beyond a

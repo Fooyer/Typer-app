@@ -11,7 +11,7 @@ use tauri::{AppHandle, Manager};
 
 const KEYRING_SERVICE: &str = "com.typer.app.ai-keys";
 
-fn provider_env_var(provider_id: &str) -> Option<&'static str> {
+pub fn provider_env_var(provider_id: &str) -> Option<&'static str> {
     match provider_id {
         "anthropic" => Some("ANTHROPIC_API_KEY"),
         "google" => Some("GOOGLE_GENERATIVE_AI_API_KEY"),
@@ -80,7 +80,7 @@ fn write_settings(app: &AppHandle, settings: &StoredSettings) -> Result<(), Stri
     fs::write(file, json).map_err(|e| e.to_string())
 }
 
-fn get_api_key(provider_id: &str) -> Option<String> {
+pub fn get_api_key(provider_id: &str) -> Option<String> {
     keyring::Entry::new(KEYRING_SERVICE, provider_id).ok()?.get_password().ok()
 }
 
