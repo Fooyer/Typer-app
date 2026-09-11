@@ -631,6 +631,18 @@ button.update-pill-ready:hover {
   background: var(--bg-sidebar);
 }
 
+/* When every section is collapsed the explorer's flexible row takes all the leftover space, so the
+   sidebar reads as one big empty slab of the theme's sideBar background — in dark themes that
+   mid-gray reads a bit flat/glaring next to the darker editor. Pull it toward black so the empty
+   state is calmer on the eyes; light themes keep their own natural tone. The `:has()` selector is
+   cheap here (just a handful of sections) and transitions so collapsing/expanding eases the color
+   alongside the section animation. */
+:root[data-theme-kind="dark"]
+  .sidebar:not(:has(.sidebar-section:not(.collapsed))) {
+  background: color-mix(in srgb, var(--bg-sidebar) 78%, black);
+  transition: background-color 0.25s ease;
+}
+
 .resize-handle {
   flex: 0 0 auto;
   background: transparent;
@@ -778,6 +790,29 @@ button.update-pill-ready:hover {
     grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.18s ease,
     height 0s ease 0.25s;
+}
+
+/* Fixed-size sections (Specs, Conexões) sit in *auto*-sized rows, so their collapse wrapper's row
+   track is content-based rather than definite and the 1fr/0fr trick above can't interpolate there
+   (the body would hold its height until the delayed `height: 0` snapped it shut). Instead
+   SidebarSection.tsx measures the body's content height and drives a real `height` transition
+   (set inline, so these rules only matter for the non-measured first frame/fallback). */
+.sidebar-section.fixed-size .sidebar-section-collapse {
+  height: auto;
+  overflow: hidden;
+  transition:
+    height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease;
+}
+
+.sidebar-section.fixed-size.collapsed .sidebar-section-collapse {
+  height: 0;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease;
 }
 
 .sidebar-section-body {
@@ -1263,6 +1298,32 @@ button.update-pill-ready:hover {
   cursor: not-allowed;
 }
 
+/* Wraps just the model text input so its loading spinner (fetching `opencode models`) sits inside
+   the field itself — the rest of the settings modal (provider select, API keys, save button) stays
+   interactive while this is in flight, it's the only part waiting on the opencode CLI. */
+.settings-model-input {
+  position: relative;
+  display: flex;
+}
+
+.settings-model-input input {
+  flex: 1;
+  padding-right: 30px;
+}
+
+.settings-model-spinner {
+  position: absolute;
+  top: 50%;
+  right: 11px;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-top-color: var(--accent);
+  animation: connecting-spin 0.7s linear infinite;
+}
+
 .settings-primary {
   background: var(--accent) !important;
   color: #fff !important;
@@ -1333,6 +1394,41 @@ button.update-pill-ready:hover {
   font-size: 12px;
   color: var(--color-success);
   font-style: normal;
+}
+
+.settings-about-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.settings-about-card .app-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+}
+
+.settings-about-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.settings-update-status {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.settings-update-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-update-row .settings-model-spinner {
+  position: static;
+  margin-top: 0;
 }
 
 .theme-grid {
@@ -3508,6 +3604,21 @@ button.update-pill-ready:hover {
   border-top: 1px solid var(--border);
   background: var(--bg);
   min-height: 0;
+}
+
+/* The bottom panel sits between the editor and the window edge, so it reads best in the same
+   color family as the sidebar (Explorador) rather than a flat editor wash — a shade darker than the
+   sidebar's own gray, so it still separates from it. Light themes keep their own natural tone. */
+:root[data-theme-kind="dark"] .output-panel {
+  background: color-mix(in srgb, var(--bg-sidebar) 90%, black);
+}
+
+/* Collapsing hides the whole body (logs + search) so only the header bar with its breathing room
+   below stays — App.tsx's OUTPUT_COLLAPSED_HEIGHT is taller than the header on purpose, and without
+   this a sliver of the body's first line would peek out underneath. */
+.output-panel.collapsed .output-panel-body,
+.output-panel.collapsed .search-panel {
+  display: none;
 }
 
 .output-panel-header {

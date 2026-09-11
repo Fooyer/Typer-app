@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { UpdaterStatus } from "../platform/types";
 import type { AppTheme } from "../themes/registry";
 import {
   AI_PROVIDERS,
@@ -7,6 +8,8 @@ import {
 } from "../utils/aiPreference";
 import AppLogo from "./AppLogo";
 
+const RELEASES_URL = "https://github.com/Fooyer/Typer-app/releases";
+
 export interface SettingsModalProps {
   themes: AppTheme[];
   themeId: string;
@@ -14,14 +17,21 @@ export interface SettingsModalProps {
   onImportThemeClick: () => void;
   accentOverride: string | null;
   onSelectAccent: (color: string | null) => void;
+  // Lifted from App.tsx (same state that drives the titlebar update pill) rather than tracked
+  // separately here, so the "Sobre" tab and the pill never disagree about what's in flight and a
+  // manual "Verificar agora" click here doesn't race the app's own periodic check.
+  updateStatus: UpdaterStatus | null;
+  onCheckForUpdates: () => void;
+  onInstallUpdate: () => void;
   onClose: () => void;
 }
 
-type SettingsTab = "aparencia" | "ia";
+type SettingsTab = "aparencia" | "ia" | "sobre";
 
 const TABS: { id: SettingsTab; label: string; icon: string; desc: string }[] = [
   { id: "aparencia", label: "Aparência", icon: "🎨", desc: "Tema, cores e destaque" },
   { id: "ia", label: "Inteligência Artificial", icon: "🤖", desc: "Provedor, modelo e chaves" },
+  { id: "sobre", label: "Sobre", icon: "ℹ️", desc: "Versão e atualizações" },
 ];
 
 // Presets shown alongside the free-form color picker — "Padrão" (null) restores the original brand
@@ -58,6 +68,9 @@ function SettingsModal({
   onImportThemeClick,
   accentOverride,
   onSelectAccent,
+  updateStatus,
+  onCheckForUpdates,
+  onInstallUpdate,
   onClose,
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("aparencia");
@@ -66,11 +79,26 @@ function SettingsModal({
 
   // ---- AI provider configuration --------------------------------
   const hasElectronAPI = typeof window.electronAPI !== "undefined";
+
+  // ---- About / updates --------------------------------
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!hasElectronAPI) return;
+    window.electronAPI.app
+      .getVersion()
+      .then(setAppVersion)
+      .catch(() => setAppVersion(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [providerId, setProviderId] = useState<string>(() => loadAiPreference().providerId);
   const [model, setModel] = useState<string>(() => loadAiPreference().model);
   // Model ids the bundled opencode can actually use, per selected provider (`opencode models ...`).
   // Empty for providers not configured on this machine → the field then works as free-form id only.
   const [modelOptions, setModelOptions] = useState<string[]>([]);
+  // True only while the opencode CLI call behind modelOptions is in flight, so just the model field
+  // shows a spinner — the rest of the modal (provider select, API keys, etc.) stays fully usable.
+  const [modelsLoading, setModelsLoading] = useState(false);
   // Draft API keys for BOTH here: each provider row keeps its own typed-but-unsaved value, so the
   // user can fill several keys and save them all at once (the main process persists each provider's
   // key independently — see electron/aiSettings.ts).
@@ -108,10 +136,24 @@ function SettingsModal({
       setModelOptions([]);
       return;
     }
+    // Guards against a stale response landing after the user has already switched providers again
+    // (the previous request's promise settling after a newer one was fired).
+    let stale = false;
+    setModelsLoading(true);
     window.electronAPI.ai
       .modelList(providerId === "default" ? undefined : providerId)
-      .then((models) => setModelOptions(models))
-      .catch(() => setModelOptions([]));
+      .then((models) => {
+        if (!stale) setModelOptions(models);
+      })
+      .catch(() => {
+        if (!stale) setModelOptions([]);
+      })
+      .finally(() => {
+        if (!stale) setModelsLoading(false);
+      });
+    return () => {
+      stale = true;
+    };
   }, [hasElectronAPI, providerId]);
 
   const isDefaultProvider = providerId === "default";
@@ -314,29 +356,42 @@ function SettingsModal({
 
                     <label className="settings-field">
                       <span>Modelo</span>
-                      <input
-                        type="text"
-                        list="ai-model-suggestions"
-                        value={model}
-                        onChange={(event) => setModel(event.target.value)}
-                        placeholder={
-                          isDefaultProvider
-                            ? "modelo padrão do opencode"
-                            : "digite o id do modelo aceito pelo provedor"
-                        }
-                      />
+                      <div className="settings-model-input">
+                        <input
+                          type="text"
+                          list="ai-model-suggestions"
+                          value={model}
+                          onChange={(event) => setModel(event.target.value)}
+                          placeholder={
+                            isDefaultProvider
+                              ? "modelo padrão do opencode"
+                              : "digite o id do modelo aceito pelo provedor"
+                          }
+                        />
+                        {modelsLoading && (
+                          <span
+                            className="settings-model-spinner"
+                            role="status"
+                            aria-label="Carregando modelos do opencode…"
+                            title="Carregando modelos do opencode…"
+                          />
+                        )}
+                      </div>
                       <datalist id="ai-model-suggestions">
                         {modelOptions.map((m) => (
                           <option key={m} value={m} />
                         ))}
                       </datalist>
-                      {isDefaultProvider && modelOptions.length > 0 && (
+                      {modelsLoading && (
+                        <span className="settings-hint">Buscando modelos do opencode…</span>
+                      )}
+                      {!modelsLoading && isDefaultProvider && modelOptions.length > 0 && (
                         <span className="settings-hint">
                           Sugestões listadas vêm do opencode instalado (
                           <code>opencode models</code>).
                         </span>
                       )}
-                      {!isDefaultProvider && modelOptions.length === 0 && (
+                      {!modelsLoading && !isDefaultProvider && modelOptions.length === 0 && (
                         <span className="settings-hint">
                           Este provedor não está configurado no seu opencode, digite o id do
                           modelo manualmente (ex.: claude-sonnet-4-5).
@@ -406,6 +461,98 @@ function SettingsModal({
                       Salvar configuração de IA
                     </button>
                     {aiStatus && <span className="settings-status">{aiStatus}</span>}
+                  </div>
+                </section>
+              </>
+            )}
+
+            {activeTab === "sobre" && (
+              <>
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <h4>Typer</h4>
+                  </div>
+                  <div className="settings-card settings-about-card">
+                    <AppLogo />
+                    <div>
+                      <div className="settings-about-name">Typer</div>
+                      <div className="settings-hint">
+                        {appVersion ? `Versão ${appVersion}` : "Obtendo versão…"}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="settings-section">
+                  <div className="settings-section-head">
+                    <h4>Atualizações</h4>
+                    <p className="settings-hint">
+                      O Typer verifica automaticamente se há uma nova versão sempre que é aberto
+                      (e a cada poucas horas enquanto fica aberto), baixando em segundo plano.
+                      Você também pode verificar manualmente a qualquer momento.
+                    </p>
+                  </div>
+                  <div className="settings-card">
+                    <div className="settings-update-status">
+                      {(updateStatus === null || updateStatus.state === "not-available") && (
+                        <span>Você já está na versão mais recente.</span>
+                      )}
+                      {updateStatus?.state === "checking" && (
+                        <span className="settings-update-row">
+                          <span className="settings-model-spinner" role="status" aria-hidden="true" />
+                          Verificando atualizações…
+                        </span>
+                      )}
+                      {updateStatus?.state === "available" && (
+                        <span className="settings-update-row">
+                          <span className="settings-model-spinner" role="status" aria-hidden="true" />
+                          Nova versão {updateStatus.version} encontrada, baixando…
+                        </span>
+                      )}
+                      {updateStatus?.state === "downloading" && (
+                        <span className="settings-update-row">
+                          <span className="settings-model-spinner" role="status" aria-hidden="true" />
+                          Baixando atualização… {updateStatus.percent}%
+                        </span>
+                      )}
+                      {updateStatus?.state === "downloaded" && (
+                        <span>Atualização {updateStatus.version} pronta para instalar.</span>
+                      )}
+                      {updateStatus?.state === "error" && (
+                        <span className="settings-key-status missing">
+                          Erro ao verificar atualizações: {updateStatus.message}
+                        </span>
+                      )}
+                    </div>
+                    <div className="settings-actions">
+                      {updateStatus?.state === "downloaded" ? (
+                        <button
+                          type="button"
+                          className="settings-primary"
+                          onClick={onInstallUpdate}
+                        >
+                          Reiniciar e instalar
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={onCheckForUpdates}
+                          disabled={
+                            updateStatus?.state === "checking" ||
+                            updateStatus?.state === "downloading" ||
+                            updateStatus?.state === "available"
+                          }
+                        >
+                          Verificar atualizações agora
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => window.open(RELEASES_URL, "_blank")}
+                      >
+                        Ver notas de lançamento
+                      </button>
+                    </div>
                   </div>
                 </section>
               </>

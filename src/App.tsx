@@ -1660,6 +1660,9 @@ function App() {
           onImportThemeClick={() => fileInputRef.current?.click()}
           accentOverride={accentOverride}
           onSelectAccent={selectAccent}
+          updateStatus={updateStatus}
+          onCheckForUpdates={() => void window.electronAPI.updater.check()}
+          onInstallUpdate={() => void window.electronAPI.updater.install()}
           onClose={() => setSettingsOpen(false)}
         />
       )}

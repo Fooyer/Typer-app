@@ -4,6 +4,7 @@
 // transporte por trás dela. Ver o plano de migração para o mapeamento completo IPC -> comando Rust.
 //
 // Import isto uma única vez, por efeito colateral, antes do primeiro render (ver main.tsx).
+import { getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -90,6 +91,9 @@ function contextBridgeShim(): void {
     getVersions: () => ({ chrome: "n/a", node: "n/a", electron: "n/a" }),
     onMainMessage: (callback) => {
       void listen<string>("main-message", (event) => callback(event.payload));
+    },
+    app: {
+      getVersion: () => getVersion(),
     },
     windowControls: {
       minimize: () => appWindow.minimize(),

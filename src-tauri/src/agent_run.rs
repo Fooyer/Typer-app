@@ -473,16 +473,23 @@ pub fn agent_force_reset() {
 /// given it's forwarded to the CLI (`opencode models <provider>`) and only that provider's models
 /// are returned — providers not configured on this machine come back empty (the CLI prints
 /// "Provider not found"), which the picker treats as "free-form id only".
+///
+/// Async + `tokio::process` (same as `base_command` uses for actual agent runs) rather than
+/// `std::process::Command::output()`: the old blocking call ran inline on a Tauri command thread and
+/// visibly froze the UI while `opencode` started up. A hard timeout keeps this from ever hanging the
+/// Settings modal indefinitely if the binary is missing/misbehaving — worst case the picker just
+/// falls back to free-form id entry.
 #[tauri::command]
-pub fn model_list(provider_id: Option<String>) -> Vec<String> {
+pub async fn model_list(provider_id: Option<String>) -> Vec<String> {
     let bin = resolve_opencode_binary();
-    let mut cmd = std::process::Command::new(&bin);
+    let mut cmd = base_command(&bin);
     cmd.arg("models");
     if let Some(provider) = provider_id.as_deref().filter(|p| !p.is_empty()) {
         cmd.arg(provider);
     }
-    let Ok(output) = cmd.output() else {
-        return Vec::new();
+    let output = match tokio::time::timeout(std::time::Duration::from_secs(10), cmd.output()).await {
+        Ok(Ok(output)) => output,
+        _ => return Vec::new(),
     };
     let text = String::from_utf8_lossy(&output.stdout);
     text.lines()

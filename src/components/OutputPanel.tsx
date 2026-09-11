@@ -56,7 +56,7 @@ function OutputPanel({
   }, [lines]);
 
   return (
-    <div className="output-panel">
+    <div className={`output-panel${collapsed ? " collapsed" : ""}`}>
       <div className="output-panel-header">
         <div className="output-panel-tabs">
           <button
@@ -108,7 +108,7 @@ function OutputPanel({
       </div>
       <div
         className="output-panel-body"
-        style={{ display: activeTab === "log" ? "block" : "none" }}
+        style={{ display: activeTab === "log" && !collapsed ? "block" : "none" }}
         ref={scrollRef}
       >
         {lines.length === 0 ? (

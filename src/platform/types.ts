@@ -151,6 +151,9 @@ export interface AiSaveConfigArgs {
 export interface ElectronAPI {
   getVersions: () => { chrome: string; node: string; electron: string };
   onMainMessage: (callback: (message: string) => void) => void;
+  app: {
+    getVersion: () => Promise<string>;
+  };
   windowControls: {
     minimize: () => Promise<void>;
     toggleMaximize: () => Promise<void>;
