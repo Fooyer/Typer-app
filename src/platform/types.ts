@@ -286,6 +286,9 @@ export interface ElectronAPI {
   ai: {
     getConfig: () => Promise<AiSettingsView>;
     saveConfig: (args: AiSaveConfigArgs) => Promise<AiSettingsView>;
+    /** Models the bundled opencode can actually use (`opencode models`). Pass a provider id to
+     * scope to that provider; providers not configured come back empty. */
+    modelList: (providerId?: string) => Promise<string[]>;
   };
 }
 

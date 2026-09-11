@@ -173,6 +173,42 @@ pub fn clear_session(config: &AtelierConnectionConfig) {
     COOKIE_JAR.lock().unwrap().remove(&cookie_key(config));
 }
 
+/// Cache of the document list per connection+namespace, populated by `atelier_list_documents` (the
+/// call the app's file explorer makes on connect/namespace-change/refresh). The agent bridge serves
+/// its `list_documents` tool from here instead of re-querying the server every time — the agent
+/// sees exactly the same project file listing the user sees in the explorer, instantly.
+static DOC_LIST_CACHE: LazyLock<Mutex<HashMap<String, Vec<AtelierDocNameEntry>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+fn doc_cache_key(config: &AtelierConnectionConfig, namespace: &str) -> String {
+    format!("{}::{namespace}", cookie_key(config))
+}
+
+pub fn cache_documents(config: &AtelierConnectionConfig, namespace: &str, docs: Vec<AtelierDocNameEntry>) {
+    DOC_LIST_CACHE.lock().unwrap().insert(doc_cache_key(config, namespace), docs);
+}
+
+pub fn cached_documents(
+    config: &AtelierConnectionConfig,
+    namespace: &str,
+) -> Option<Vec<AtelierDocNameEntry>> {
+    DOC_LIST_CACHE.lock().unwrap().get(&doc_cache_key(config, namespace)).cloned()
+}
+
+/// Cached listing when the explorer already loaded it, otherwise a live server fetch that is
+/// cached on the way out — so repeated agent `list_documents` calls never hit the server twice.
+pub async fn list_documents_cached(
+    config: &AtelierConnectionConfig,
+    namespace: &str,
+) -> Result<Vec<AtelierDocNameEntry>, String> {
+    if let Some(docs) = cached_documents(config, namespace) {
+        return Ok(docs);
+    }
+    let docs = list_documents(config, namespace, false).await?;
+    cache_documents(config, namespace, docs.clone());
+    Ok(docs)
+}
+
 fn build_url(config: &AtelierConnectionConfig, path: &str, params: &[(&str, String)]) -> String {
     let scheme = if config.https { "https" } else { "http" };
     let prefix = match &config.path_prefix {

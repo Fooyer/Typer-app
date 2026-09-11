@@ -76,19 +76,19 @@ function ApiTester({ connectionId, namespace, docName, sourceContent, onLog }: A
           setBasePath(names[0]);
           setBasePathStatus(
             names.length > 1
-              ? `${names.length} aplicações usam esta classe — confira o caminho selecionado.`
+              ? `${names.length} aplicações usam esta classe, confira o caminho selecionado.`
               : "",
           );
         } else {
           setBasePathStatus(
-            "Não encontrado automaticamente — informe o caminho da aplicação manualmente.",
+            "Não encontrado automaticamente, informe o caminho da aplicação manualmente.",
           );
         }
       })
       .catch((error) => {
         if (cancelled) return;
         setBasePathStatus(
-          "Não encontrado automaticamente — informe o caminho da aplicação manualmente.",
+          "Não encontrado automaticamente, informe o caminho da aplicação manualmente.",
         );
         onLog(
           `Não foi possível resolver o caminho da aplicação: ${(error as Error).message}`,

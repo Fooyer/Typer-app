@@ -99,7 +99,7 @@ const TOKEN_LIMIT_PATTERN =
 function annotateIfTokenLimit(text: string): string {
   if (!TOKEN_LIMIT_PATTERN.test(text)) return text;
   return (
-    `Esta sessão parece ter atingido o limite de tokens/contexto do modelo — inicie um Novo Chat ` +
+    `Esta sessão parece ter atingido o limite de tokens/contexto do modelo. Inicie um Novo Chat ` +
     `para continuar. (${text})`
   );
 }

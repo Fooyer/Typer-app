@@ -17,6 +17,7 @@ import { classSourceToExportXml, combineExportXml } from "../utils/classXmlExpor
 import { mapWithConcurrency } from "../utils/concurrency";
 import { setKnownClasses } from "../monaco/classIndex";
 import FileExplorer, { type FileExplorerHandle } from "./FileExplorer";
+import ExportClassesModal from "./ExportClassesModal";
 import SidebarSection from "./SidebarSection";
 import SpecsPanel from "./SpecsPanel";
 import type { LogLevel } from "./OutputPanel";
@@ -45,6 +46,13 @@ export interface ConnectionsPanelHandle {
    * approved back-to-back (the agent editing a handful of files in one run) coalesce into a single
    * `listDocuments` round trip instead of one per file. */
   refreshDocuments: (connectionId: string, namespace: string) => void;
+  /** Opens the multi-class export dialog, pre-selecting the given class names. Lets the editor menu
+   * ("Exportar Classe como XML…") route through the same picker as every other export entry point. */
+  openExportDialog: (initialDocNames: string[]) => void;
+  /** Returns the currently connected server context (sidebar's active connection/namespace), or
+   * null when no connection is active. Lets the Welcome page call things like "open class" and
+   * "find in files" even when the active tab itself (the welcome tab) has no server context. */
+  getActiveContext: () => { connectionId: string; namespace: string } | null;
 }
 
 function escapeRegExp(value: string): string {
@@ -108,6 +116,9 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
     const [newClassName, setNewClassName] = useState("");
     const [newFileDialogOpen, setNewFileDialogOpen] = useState(false);
     const [newFileName, setNewFileName] = useState("");
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
+    const [exportInitial, setExportInitial] = useState<string[]>([]);
+    const [exportSession, setExportSession] = useState(0);
     const [connectingTo, setConnectingTo] = useState<string | null>(null);
     const fileExplorerRef = useRef<FileExplorerHandle>(null);
     const [confirmRequest, setConfirmRequest] = useState<{
@@ -120,6 +131,10 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
     // instead of whatever was active when the handle was first built.
     const activeConnectionRef = useRef<{ id: string; namespace: string } | null>(null);
     const refreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const availableClassNames = useMemo(
+      () => allDocuments.filter((doc) => doc.name.toLowerCase().endsWith(".cls")).map((doc) => doc.name),
+      [allDocuments],
+    );
 
     const hasElectronAPI = typeof window.electronAPI !== "undefined";
     activeConnectionRef.current =
@@ -201,7 +216,7 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
       onLog("Testando conexão…");
       try {
         const info = await window.electronAPI.atelier.test(id);
-        onLog(`Conexão OK — servidor ${info.version} (API v${info.api})`, "success");
+        onLog(`Conexão OK: servidor ${info.version} (API v${info.api})`, "success");
       } catch (error) {
         onLog(`Erro ao testar conexão: ${(error as Error).message}`, "error");
       }
@@ -245,6 +260,15 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
             refreshDebounceRef.current = null;
             void loadDocuments(connectionId, namespace);
           }, 300);
+        },
+        getActiveContext() {
+          const current = activeConnectionRef.current;
+          return current ? { connectionId: current.id, namespace: current.namespace } : null;
+        },
+        openExportDialog(initialDocNames: string[]) {
+          setExportInitial(initialDocNames);
+          setExportSession((session) => session + 1);
+          setExportDialogOpen(true);
         },
       }),
       [],
@@ -502,33 +526,38 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
       }
     }
 
-    async function exportNodesAsXml(nodes: TreeNode[]) {
+    function openExportDialog(initial: string[]) {
+      setExportInitial(initial);
+      setExportSession((session) => session + 1);
+      setExportDialogOpen(true);
+    }
+
+    function openExportDialogForNodes(nodes: TreeNode[]) {
       setContextMenu(null);
+      openExportDialog(collectClassFiles(nodes).map((file) => file.docName));
+    }
+
+    async function exportDocNamesAsXml(docNames: string[]) {
       if (!activeId || !activeNamespace) return;
-      const classFiles = collectClassFiles(nodes);
-      if (classFiles.length === 0) {
+      if (docNames.length === 0) {
         onLog("Nenhuma classe .cls encontrada na seleção.", "error");
         return;
       }
-      onLog(`Exportando ${classFiles.length} classe(s) como XML…`);
+      onLog(`Exportando ${docNames.length} classe(s) como XML…`);
       try {
-        const xmls: string[] = new Array(classFiles.length);
+        const xmls: string[] = new Array(docNames.length);
         let firstClassName = "";
-        await mapWithConcurrency(classFiles, 4, async (file, index) => {
-          const doc = await window.electronAPI.atelier.getDocument(
-            activeId,
-            activeNamespace,
-            file.docName,
-          );
+        await mapWithConcurrency(docNames, 4, async (docName, index) => {
+          const doc = await window.electronAPI.atelier.getDocument(activeId, activeNamespace, docName);
           const { xml, className } = classSourceToExportXml(doc.content);
           xmls[index] = xml;
           if (index === 0) firstClassName = className;
         });
-        const combined = classFiles.length === 1 ? xmls[0] : combineExportXml(xmls);
-        const suggestedName = classFiles.length === 1 ? `${firstClassName}.cls.xml` : "Export.xml";
+        const combined = docNames.length === 1 ? xmls[0] : combineExportXml(xmls);
+        const suggestedName = docNames.length === 1 ? `${firstClassName}.cls.xml` : "Export.xml";
         const savedPath = await window.electronAPI.files.saveText(suggestedName, combined);
         if (savedPath)
-          onLog(`${classFiles.length} classe(s) exportada(s) para ${savedPath}.`, "success");
+          onLog(`${docNames.length} classe(s) exportada(s) para ${savedPath}.`, "success");
       } catch (error) {
         onLog(`Erro ao exportar: ${(error as Error).message}`, "error");
       }
@@ -538,7 +567,7 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
       return (
         <div className="sidebar">
           <p className="connection-status">
-            Disponível apenas rodando no app desktop — este recurso usa comandos Tauri com o
+            Disponível apenas rodando no app desktop. Este recurso usa comandos Tauri com o
             processo principal.
           </p>
         </div>
@@ -559,6 +588,13 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
                 </button>
                 <button type="button" onClick={() => openNewFileDialog()} title="Novo arquivo">
                   📄+
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openExportDialog([])}
+                  title="Exportar classes como XML…"
+                >
+                  📤
                 </button>
               </>
             ) : undefined
@@ -753,7 +789,7 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
               </li>
             )}
             {contextMenu.selectedNodes.length > 1 && (
-              <li onClick={() => void exportNodesAsXml(contextMenu.selectedNodes)}>
+              <li onClick={() => openExportDialogForNodes(contextMenu.selectedNodes)}>
                 📤 Exportar {contextMenu.selectedNodes.length} itens como XML…
               </li>
             )}
@@ -771,7 +807,7 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
                         📄 Novo Arquivo aqui…
                       </li>
                       <li onClick={() => requestRename(folder)}>✎ Renomear…</li>
-                      <li onClick={() => void exportNodesAsXml([folder])}>
+                      <li onClick={() => openExportDialogForNodes([folder])}>
                         📤 Exportar pasta como XML…
                       </li>
                     </>
@@ -786,7 +822,7 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
                   <>
                     <li onClick={() => requestRename(file)}>✎ Renomear…</li>
                     {file.docName.toLowerCase().endsWith(".cls") && (
-                      <li onClick={() => void exportNodesAsXml([file])}>📤 Exportar como XML…</li>
+                      <li onClick={() => openExportDialogForNodes([file])}>📤 Exportar como XML…</li>
                     )}
                     {file.docName.toLowerCase().endsWith(".cls") && onOpenApiTester && (
                       <li
@@ -853,9 +889,20 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
         )}
 
         {connectingTo && (
-          <div className="connecting-overlay">
-            <div className="connecting-spinner" />
-            <div className="connecting-message">Conectando ao servidor {connectingTo}…</div>
+          <div className="connecting-overlay" role="status">
+            <div className="connecting-loader" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="connecting-message">
+              Conectando ao servidor <strong>{connectingTo}</strong>
+              <span className="connecting-dots" aria-hidden="true">
+                <span>.</span>
+                <span>.</span>
+                <span>.</span>
+              </span>
+            </div>
           </div>
         )}
 
@@ -874,6 +921,19 @@ const ConnectionsPanel = forwardRef<ConnectionsPanelHandle, ConnectionsPanelProp
               </div>
             </div>
           </div>
+        )}
+
+        {exportDialogOpen && (
+          <ExportClassesModal
+            key={exportSession}
+            classNames={availableClassNames}
+            initialSelected={exportInitial}
+            onExport={(names) => {
+              setExportDialogOpen(false);
+              void exportDocNamesAsXml(names);
+            }}
+            onClose={() => setExportDialogOpen(false)}
+          />
         )}
       </div>
     );

@@ -219,6 +219,10 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
   const messageSeqRef = useRef(0);
   const chatRef = useRef<HTMLDivElement>(null);
   const reviewListRef = useRef<HTMLDivElement>(null);
+  // Whether the chat should keep auto-scrolling to the bottom as new content streams in. Defaults
+  // to true, and flips to false the moment the user scrolls up — so streaming text never yanks
+  // them back down; scrolling back to the bottom re-engages follow mode (see handleChatScroll).
+  const stickToBottomRef = useRef(true);
   const lastActivityRef = useRef<number>(Date.now());
   // What the last event was doing, for the "what's the agent doing right now" loader — separate
   // from the stall timer's lastActivityRef.
@@ -380,8 +384,8 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
       if (payload.code !== 0 && !sawErrorRef.current) {
         setAssistantError(
           `O agente encerrou inesperadamente (código ${payload.code}) sem explicar o motivo. ` +
-            `Isso costuma acontecer quando a sessão atinge o limite de tokens/contexto do modelo ` +
-            `— inicie um Novo Chat para continuar.`,
+            `Isso costuma acontecer quando a sessão atinge o limite de tokens/contexto do modelo. ` +
+            `Inicie um Novo Chat para continuar.`,
         );
       }
       finishRunningAssistant();
@@ -439,7 +443,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
         hardStallTriggeredRef.current = true;
         setError(
           `O agente foi interrompido automaticamente após ${Math.round(HARD_STALL_MS / 60_000)} ` +
-            `minutos sem nenhuma resposta — provavelmente travou. Tente de novo ou, se persistir, ` +
+            `minutos sem nenhuma resposta, provavelmente travou. Tente de novo ou, se persistir, ` +
             `reinicie o app.`,
         );
         void abort();
@@ -449,6 +453,9 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
   }, [running]);
 
   useEffect(() => {
+    // Only follows the stream while the user is at or near the bottom — scrolling up suspends
+    // auto-follow until they scroll back down (see handleChatScroll) or start a new prompt.
+    if (!stickToBottomRef.current) return;
     chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight });
   }, [messages, liveNotes]);
 
@@ -473,6 +480,16 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
 
   const handleReviewScroll = useCallback(() => {
     setReviewScrollTop(reviewListRef.current?.scrollTop ?? 0);
+  }, []);
+
+  // If the user is within ~1 line-height of the bottom they're "following"; scrolling any further
+  // up releases follow mode so incoming text never teleports them back down. Scrolling back to
+  // the bottom re-engages follow mode (and sending a prompt does too — see runPrompt).
+  const handleChatScroll = useCallback(() => {
+    const el = chatRef.current;
+    if (!el) return;
+    stickToBottomRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 48;
   }, []);
 
   function toggleEntryExpanded(entryKey: string) {
@@ -546,6 +563,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
     setReasoningSnippet(null);
     setError(null);
     setRunning(true);
+    stickToBottomRef.current = true; // follow the new reply from the bottom
     setStalled(false);
     sawErrorRef.current = false;
     streamKindRef.current = null;
@@ -635,6 +653,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
     if (target.sessionId) saveActiveSessionId(connectionId, namespace, target.sessionId);
     else clearActiveSessionId(connectionId, namespace);
     setRailTab(null);
+    stickToBottomRef.current = true; // start at the bottom of the restored conversation
   }
 
   function removeChatSession(id: string) {
@@ -671,7 +690,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
           // The user said yes but the write didn't land — surface why instead of the generic
           // success message, so a compile failure doesn't look like it silently worked.
           onLog(
-            `${item.name}: aprovado, mas falhou ao salvar no servidor — ${result?.error ?? "erro desconhecido"}.`,
+            `${item.name}: aprovado, mas falhou ao salvar no servidor: ${result?.error ?? "erro desconhecido"}.`,
             "error",
           );
         } else {
@@ -821,7 +840,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
                 <div className="agent-panel-chat-session-list">
                   {chatSessions.length === 0 ? (
                     <p className="connection-status">
-                      Nenhum chat arquivado ainda — clicar em "Novo Chat" guarda a conversa atual
+                      Nenhum chat arquivado ainda. Clicar em "Novo Chat" guarda a conversa atual
                       aqui antes de começar uma nova.
                     </p>
                   ) : (
@@ -856,7 +875,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
             {changesOpen && (
               <>
                 <div className="agent-panel-review-header">
-                  <h4>Alterações{reviews.length ? ` — ${reviews.length} rodada(s)` : ""}</h4>
+                  <h4>Alterações{reviews.length ? ` (${reviews.length} rodada(s))` : ""}</h4>
                 </div>
                 <div
                   className="agent-panel-review-list"
@@ -865,7 +884,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
                 >
                   {reviews.length === 0 ? (
                     <p className="connection-status">
-                      Nenhuma alteração ainda — execute um prompt.
+                      Nenhuma alteração ainda. Execute um prompt.
                     </p>
                   ) : (
                     <div className="agent-review-rows" style={{ height: reviewTotalHeight }}>
@@ -927,7 +946,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
         </div>
 
         <div className="agent-panel-main">
-          <div className="agent-panel-chat" ref={chatRef}>
+          <div className="agent-panel-chat" ref={chatRef} onScroll={handleChatScroll}>
             {messages.length === 0 && (
               <p className="connection-status agent-panel-chat-empty">
                 O agente responde aqui, no mesmo estilo de um chat. As mensagens ficam salvas ao
@@ -984,7 +1003,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
                       (stalled ? (
                         <div className="agent-panel-stalled">
                           <span>
-                            ⚠ O agente não responde há mais de {Math.round(STALL_MS / 1000)}s —
+                            ⚠ O agente não responde há mais de {Math.round(STALL_MS / 1000)}s,
                             pode estar travado.
                           </span>
                           <button type="button" className="agent-panel-secondary" onClick={abort}>
@@ -1020,7 +1039,10 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
               placeholder="Peça algo ao opencode sobre este namespace…"
               disabled={running}
               onKeyDown={(event) => {
-                if ((event.ctrlKey || event.metaKey) && event.key === "Enter") void runPrompt();
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void runPrompt();
+                }
               }}
             />
             {running ? (
@@ -1038,7 +1060,7 @@ function AgentPanel({ connectionId, namespace, onLog, onDocumentSaved }: AgentPa
                 onClick={runPrompt}
                 disabled={!prompt.trim()}
               >
-                ▶ Executar (Ctrl+Enter)
+                ▶ Executar (Enter)
               </button>
             )}
           </div>

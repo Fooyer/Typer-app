@@ -12,6 +12,7 @@ import type { SearchMatch } from "./components/SearchPanel";
 import SettingsModal from "./components/SettingsModal";
 import SqlRunner from "./components/SqlRunner";
 import StudioDialogModal, { type StudioDialogRequest } from "./components/StudioDialogModal";
+import WelcomePanel from "./components/WelcomePanel";
 import { applyAppChrome } from "./themes/appearance";
 import {
   BUILTIN_THEMES,
@@ -60,23 +61,9 @@ const OUTPUT_COLLAPSED_HEIGHT = 48;
 /** How often to re-check GitHub Releases for a new version, on top of the check on startup. */
 const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 
-const SAMPLE = `Class Demo.Hello Extends %RegisteredObject
-{
-
-/// Says hello to the given name.
-ClassMethod Greet(name As %String) As %String
-{
-    Set greeting = "Hello, "_name_"!"
-    Write greeting, !
-    Quit greeting
-}
-
-}
-`;
-
 interface Tab {
   id: string;
-  kind: "code" | "sql" | "api" | "agent" | "spec";
+  kind: "code" | "sql" | "api" | "agent" | "spec" | "welcome";
   title: string;
   content: string;
   savedContent: string;
@@ -111,9 +98,9 @@ const hasElectronAPI = typeof window.electronAPI !== "undefined";
 
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([
-    { id: "tab-0", kind: "code", title: "sample.cls", content: SAMPLE, savedContent: SAMPLE },
+    { id: "tab-welcome", kind: "welcome", title: "Bem-vindo", content: "", savedContent: "" },
   ]);
-  const [activeTabId, setActiveTabId] = useState<string | null>("tab-0");
+  const [activeTabId, setActiveTabId] = useState<string | null>("tab-welcome");
   const [pendingCloseId, setPendingCloseId] = useState<string | null>(null);
   const [pendingWindowClose, setPendingWindowClose] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<UpdaterStatus | null>(null);
@@ -156,6 +143,15 @@ function App() {
 
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? null;
   tabsRef.current = tabs;
+
+  // Server context for actions that need one (open class, find-in-files, ...). Normally the active
+  // tab points at a connection, but the Welcome tab doesn't — there we fall back to whatever server
+  // is currently connected in the sidebar (if any), so the welcome page's shortcuts still work.
+  function getActiveServerContext(): { connectionId: string; namespace: string } | null {
+    if (activeTab?.connectionId && activeTab?.namespace)
+      return { connectionId: activeTab.connectionId, namespace: activeTab.namespace };
+    return connectionsPanelRef.current?.getActiveContext() ?? null;
+  }
 
   function appendLog(message: string, level: LogLevel = "info") {
     const time = new Date().toLocaleTimeString();
@@ -230,7 +226,7 @@ function App() {
       if (status.state === "available")
         appendLog(`Nova versão ${status.version} encontrada, baixando…`, "info");
       if (status.state === "downloaded")
-        appendLog(`Atualização ${status.version} pronta — reinicie para aplicar.`, "success");
+        appendLog(`Atualização ${status.version} pronta. Reinicie para aplicar.`, "success");
       if (status.state === "error")
         appendLog(`Erro ao verificar atualizações: ${status.message}`, "error");
     });
@@ -317,7 +313,7 @@ function App() {
     if (!tab) return;
     if (isDirty(tab)) {
       appendLog(
-        `${docName} foi alterado no servidor pelo agente, mas a aba aberta tem edições não salvas — salve ou descarte para ver a versão mais recente.`,
+        `${docName} foi alterado no servidor pelo agente, mas a aba aberta tem edições não salvas. Salve ou descarte para ver a versão mais recente.`,
         "info",
       );
       return;
@@ -397,10 +393,10 @@ function App() {
 
   async function openClassByName(className: string) {
     if (!hasElectronAPI) return;
-    const context = activeTab?.connectionId && activeTab.namespace ? activeTab : null;
+    const context = getActiveServerContext();
     if (!context?.connectionId || !context.namespace) {
       appendLog(
-        `Não é possível abrir "${className}": a aba atual não está ligada a um servidor.`,
+        `Não é possível abrir "${className}": nenhum servidor conectado. Use Conexões à esquerda para conectar.`,
         "error",
       );
       return;
@@ -561,9 +557,9 @@ function App() {
 
   async function runFindInFiles() {
     if (!hasElectronAPI) return;
-    const context = activeTab?.connectionId && activeTab.namespace ? activeTab : null;
+    const context = getActiveServerContext();
     if (!context?.connectionId || !context.namespace) {
-      setSearchStatus("Abra um arquivo de um servidor para pesquisar em todos os arquivos.");
+      setSearchStatus("Conecte-se a um servidor para pesquisar em todos os arquivos.");
       return;
     }
     const query = searchQuery.trim();
@@ -582,7 +578,7 @@ function App() {
       } catch (serverSearchError) {
         if (searchTokenRef.current !== token) return;
         appendLog(
-          `Busca server-side (v2/action/search) indisponível: ${(serverSearchError as Error).message} — usando download por arquivo.`,
+          `Busca server-side (v2/action/search) indisponível: ${(serverSearchError as Error).message}. Usando download por arquivo.`,
           "info",
         );
       }
@@ -1250,7 +1246,14 @@ function App() {
         {
           label: "Exportar Classe como XML…",
           disabled: activeTab?.kind !== "code",
-          onSelect: () => void exportActiveClassAsXml(),
+          onSelect: () => {
+            if (activeTab?.kind !== "code") return;
+            if (hasElectronAPI && activeTab.docName) {
+              connectionsPanelRef.current?.openExportDialog([activeTab.docName]);
+            } else {
+              void exportActiveClassAsXml();
+            }
+          },
         },
         {
           label: "Testar Rotas da API…",
@@ -1439,20 +1442,21 @@ function App() {
                     {tab.kind === "api" ? "🔌 " : ""}
                     {tab.kind === "agent" ? "🤖 " : ""}
                     {tab.kind === "spec" ? "📝 " : ""}
+                    {tab.kind === "welcome" ? "🏠 " : ""}
                     {tab.readOnly ? "🔒 " : ""}
                     {tab.title}
                     {isDirty(tab) ? " ●" : ""}
                   </span>
                   <button
-                    type="button"
-                    className="tab-close"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      closeTab(tab.id);
-                    }}
-                  >
-                    ×
-                  </button>
+                      type="button"
+                      className="tab-close"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeTab(tab.id);
+                      }}
+                    >
+                      ×
+                    </button>
                 </div>
               ))}
             </div>
@@ -1493,6 +1497,18 @@ function App() {
                 theme={themeId}
               />
             </div>
+            {activeTab?.kind === "welcome" && (
+              <div className="editor-surface">
+                <WelcomePanel
+                  onNewSql={openSqlTab}
+                  onOpenClass={() => setQuickOpenOpen(true)}
+                  onFindInFiles={openFindInFiles}
+                  onImportTheme={() => fileInputRef.current?.click()}
+                  onOpenSettings={() => setSettingsOpen(true)}
+                  onShowSidebar={() => setPanelOpen(true)}
+                />
+              </div>
+            )}
             {tabs
               .filter((tab) => tab.kind === "sql")
               .map((tab) => (

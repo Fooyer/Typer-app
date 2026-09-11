@@ -118,7 +118,7 @@ const INTRINSIC_FUNCTIONS: IntrinsicFunction[] = [
   {
     name: "$System",
     snippet: "$System.${1:Util}",
-    doc: "Acesso às classes utilitárias do sistema (%SYSTEM.*) — continue digitando após o ponto.",
+    doc: "Acesso às classes utilitárias do sistema (%SYSTEM.*). Continue digitando após o ponto.",
   },
   {
     name: "$ZConvert",
@@ -164,11 +164,11 @@ interface MemberKeyword {
 const PROPERTY_KEYWORDS: MemberKeyword[] = [
   {
     name: "Required",
-    doc: "Propriedade obrigatória — não pode ficar indefinida ao salvar o objeto.",
+    doc: "Propriedade obrigatória: não pode ficar indefinida ao salvar o objeto.",
   },
   { name: "Private", doc: "Só pode ser lida/definida a partir de métodos da própria classe." },
   { name: "ReadOnly", doc: "Não tem setter público; só pode ser definida internamente na classe." },
-  { name: "Calculated", doc: "Valor calculado — não ocupa armazenamento próprio no objeto." },
+  { name: "Calculated", doc: "Valor calculado: não ocupa armazenamento próprio no objeto." },
   {
     name: "SqlComputed",
     doc: "Coluna calculada no SQL (normalmente combinada com SqlComputeCode).",
@@ -178,7 +178,7 @@ const PROPERTY_KEYWORDS: MemberKeyword[] = [
     doc: "Código ObjectScript que calcula o valor da coluna SQL.",
     snippet: "SqlComputeCode = { ${1} }",
   },
-  { name: "Transient", doc: "Não é persistida — não vai para o banco de dados." },
+  { name: "Transient", doc: "Não é persistida: não vai para o banco de dados." },
   {
     name: "InitialExpression",
     doc: "Valor padrão atribuído quando o objeto é criado.",
@@ -333,7 +333,7 @@ const TRIGGER_KEYWORDS: MemberKeyword[] = [
 ];
 
 const CLASS_HEADER_KEYWORDS: MemberKeyword[] = [
-  { name: "Abstract", doc: "Classe abstrata — não pode ser instanciada diretamente." },
+  { name: "Abstract", doc: "Classe abstrata: não pode ser instanciada diretamente." },
   { name: "Final", doc: "Classe não pode ser estendida por subclasses." },
   { name: "NoExtent", doc: "Classe não é persistida em uma extensão própria." },
   {

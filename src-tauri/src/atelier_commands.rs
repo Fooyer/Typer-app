@@ -31,7 +31,14 @@ pub async fn atelier_list_documents(
     include_system: Option<bool>,
 ) -> Result<Vec<AtelierDocNameEntry>, String> {
     let config = connections::resolve_config(&app, &id)?;
-    atelier::list_documents(&config, &namespace, include_system.unwrap_or(false)).await
+    let include_system = include_system.unwrap_or(false);
+    let docs = atelier::list_documents(&config, &namespace, include_system).await?;
+    // Only the default (non-system) listing goes into the cache — that's the one the explorer shows
+    // and the one the agent bridge serves, so an includeSystem=true listing must not pollute it.
+    if !include_system {
+        atelier::cache_documents(&config, &namespace, docs.clone());
+    }
+    Ok(docs)
 }
 
 #[tauri::command]

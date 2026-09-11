@@ -39,6 +39,7 @@ pub fn run() {
             agent_run::agent_run,
             agent_run::agent_abort,
             agent_run::agent_force_reset,
+            agent_run::model_list,
             agent_bridge::agent_resolve_pending_write,
             ai_settings::ai_get_config,
             ai_settings::ai_save_config,

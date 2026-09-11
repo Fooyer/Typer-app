@@ -252,8 +252,11 @@ async fn route(
     body: String,
 ) -> Result<(u16, serde_json::Value), String> {
     if method == "GET" && path == "/documents" {
+        // The file explorer already loaded this listing (and keeps it fresh on saves/refresh), so
+        // serve that cache instead of a live server query — the agent sees the same files the user
+        // does, instantly. Falls back to fetching+caching when the explorer hasn't loaded it yet.
         let docs =
-            with_route_timeout(atelier::list_documents(&session.config, &session.namespace, false)).await?;
+            with_route_timeout(atelier::list_documents_cached(&session.config, &session.namespace)).await?;
         let filter = form_query(query).get("filter").cloned().unwrap_or_default();
         if filter.is_empty() {
             return Ok((200, package_summary(&docs)));

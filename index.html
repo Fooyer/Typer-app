@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-splash-kind="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -12,12 +12,34 @@
         actually takes long enough to show as a white flash — style.css and App.tsx's own theming
         can't help here since loading *them* is part of that same wait. Removed by main.tsx once
         React has mounted (see the #app-loading removal there).
+
+        The theme has to be bootstrapped by hand too: the script below reads the saved theme
+        preference (src/utils/themePreference.ts) straight from localStorage and applies its
+        colors as --splash-* variables before first paint, so the whole splash — background and
+        loader alike — is born already matching the theme instead of flashing a hardcoded dark.
+        Defaults below mirror Dark+ so a failed/inaccessible storage (or a fresh install) simply
+        falls back to the app's existing look.
       */
+      :root {
+        --splash-bg: #1e1e1e;
+        --splash-fg: #d4d4d4;
+        --splash-accent: #007fd4;
+        --splash-accent-2: #005a99;
+      }
+
+      :root[data-splash-kind="dark"] {
+        --splash-accent-2: color-mix(in srgb, var(--splash-accent) 70%, #000 30%);
+      }
+
+      :root[data-splash-kind="light"] {
+        --splash-accent-2: color-mix(in srgb, var(--splash-accent) 70%, #fff 30%);
+      }
+
       html,
       body {
         margin: 0;
         height: 100%;
-        background: #1e1e1e;
+        background: var(--splash-bg, #1e1e1e);
       }
 
       #app-loading {
@@ -28,23 +50,98 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 14px;
-        background: #1e1e1e;
-        color: #d4d4d4;
+        gap: 18px;
+        background:
+          radial-gradient(
+            ellipse 80% 60% at 50% 38%,
+            color-mix(in srgb, var(--splash-accent) 14%, transparent),
+            transparent 70%
+          ),
+          var(--splash-bg);
+        color: var(--splash-fg);
         font:
           13px -apple-system,
           BlinkMacSystemFont,
           "Segoe UI",
           sans-serif;
+        animation: app-loading-fade 0.4s ease-out both;
       }
 
+      /* App logo, colored by the theme's accent — mirrors AppLogo.tsx/themes/appearance.ts. */
+      #app-loading .app-loading-logo {
+        width: 76px;
+        height: 76px;
+        border-radius: 20px;
+        filter: drop-shadow(0 10px 28px color-mix(in srgb, var(--splash-accent) 38%, transparent));
+        animation: app-loading-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+      }
+
+      /*
+        Modern ring loader: a faint track ring whose accent "head" sweeps around with a soft glow
+        (outer bleed + inner depth), plus a pulsing accent core at the center.
+      */
       #app-loading .app-loading-spinner {
-        width: 34px;
-        height: 34px;
+        position: relative;
+        width: 54px;
+        height: 54px;
         border-radius: 50%;
-        border: 3px solid rgba(255, 255, 255, 0.2);
-        border-top-color: #d4d4d4;
-        animation: app-loading-spin 0.8s linear infinite;
+        border: 3px solid color-mix(in srgb, var(--splash-fg) 16%, transparent);
+        border-top-color: var(--splash-accent);
+        border-right-color: color-mix(in srgb, var(--splash-accent) 55%, transparent);
+        box-shadow:
+          0 0 18px color-mix(in srgb, var(--splash-accent) 45%, transparent),
+          inset 0 0 12px color-mix(in srgb, var(--splash-accent) 22%, transparent);
+        animation: app-loading-spin 1s linear infinite;
+      }
+
+      #app-loading .app-loading-spinner::after {
+        content: "";
+        position: absolute;
+        inset: 50%;
+        width: 8px;
+        height: 8px;
+        margin: -4px 0 0 -4px;
+        border-radius: 50%;
+        background: var(--splash-accent);
+        animation: app-loading-pulse 1.4s ease-in-out infinite;
+      }
+
+      #app-loading .app-loading-status {
+        color: color-mix(in srgb, var(--splash-fg) 82%, transparent);
+        letter-spacing: 0.02em;
+      }
+
+      #app-loading .app-loading-dots span {
+        display: inline-block;
+        animation: app-loading-dot 1.4s ease-in-out infinite;
+      }
+
+      #app-loading .app-loading-dots span:nth-child(2) {
+        animation-delay: 0.18s;
+      }
+
+      #app-loading .app-loading-dots span:nth-child(3) {
+        animation-delay: 0.36s;
+      }
+
+      @keyframes app-loading-fade {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes app-loading-pop {
+        from {
+          opacity: 0;
+          transform: scale(0.82) translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
       }
 
       @keyframes app-loading-spin {
@@ -52,13 +149,132 @@
           transform: rotate(360deg);
         }
       }
+
+      @keyframes app-loading-pulse {
+        0%,
+        100% {
+          transform: scale(0.85);
+          opacity: 0.55;
+        }
+        50% {
+          transform: scale(1.15);
+          opacity: 1;
+        }
+      }
+
+      @keyframes app-loading-dot {
+        0%,
+        60%,
+        100% {
+          opacity: 0.25;
+          transform: translateY(0);
+        }
+        30% {
+          opacity: 1;
+          transform: translateY(-2px);
+        }
+      }
     </style>
+    <script>
+      /*
+        Reads the saved theme (same localStorage key and shape themePreference.ts uses) and derives
+        the splash palette from it. Built-in themes are a tiny hardcoded table (their
+        editor.background/focusBorder/fg are what themes/appearance.ts would pick anyway); custom
+        imported themes read their stored vscodeTheme definition instead. Any failure falls back to
+        the Dark+ defaults baked into the CSS above.
+      */
+      (function () {
+        var root = document.documentElement;
+        var FALLBACK = ["#1e1e1e", "#d4d4d4", "#007fd4", "dark"];
+        // [editor.background, editor.foreground, focusBorder, kind] per built-in theme.
+        var BUILTINS = {
+          "dark-plus": ["#1e1e1e", "#d4d4d4", "#007fd4", "dark"],
+          "light-plus": ["#ffffff", "#000000", "#0090f1", "light"],
+          monokai: ["#272822", "#f8f8f2", "#99947c", "dark"],
+          "solarized-dark": ["#002b36", "#839496", "#2aa198", "dark"],
+          "solarized-light": ["#fdf6e3", "#657b83", "#b49471", "light"],
+          abyss: ["#000c18", "#6688cc", "#596f99", "dark"],
+          "kimbie-dark": ["#221a0f", "#d3af86", "#a57a4c", "dark"],
+          "tomorrow-night-blue": ["#002451", "#ffffff", "#bbdaff", "dark"],
+          dracula: ["#121218", "#f8f8f2", "#6272a4", "dark"],
+        };
+        var bg = FALLBACK[0];
+        var fg = FALLBACK[1];
+        var accent = FALLBACK[2];
+        var kind = FALLBACK[3];
+        try {
+          var raw = localStorage.getItem("typer.theme-preference");
+          if (raw) {
+            var pref = JSON.parse(raw);
+            if (pref && typeof pref.themeId === "string") {
+              if (BUILTINS[pref.themeId]) {
+                bg = BUILTINS[pref.themeId][0];
+                fg = BUILTINS[pref.themeId][1];
+                accent = BUILTINS[pref.themeId][2];
+                kind = BUILTINS[pref.themeId][3];
+              } else if (pref.custom && pref.custom.vscodeTheme && pref.custom.kind) {
+                var colors = pref.custom.vscodeTheme.colors || {};
+                kind = pref.custom.kind;
+                bg = colors["editor.background"] || (kind === "dark" ? "#1e1e1e" : "#ffffff");
+                fg =
+                  colors["editor.foreground"] || (kind === "dark" ? "#d4d4d4" : "#000000");
+                accent =
+                  colors["focusBorder"] ||
+                  (colors["activityBarBadge"] && colors["activityBarBadge"].background) ||
+                  (kind === "dark" ? "#007fd4" : "#0090f1");
+              }
+            }
+          }
+        } catch (e) {
+          /* storage unavailable/corrupt — keep the Dark+ fallback above */
+        }
+        root.style.setProperty("--splash-bg", bg);
+        root.style.setProperty("--splash-fg", fg);
+        root.style.setProperty("--splash-accent", accent);
+        root.setAttribute("data-splash-kind", kind);
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
     <div id="app-loading">
+      <svg class="app-loading-logo" viewBox="0 0 256 256" aria-hidden="true">
+        <defs>
+          <linearGradient
+            id="app-splash-logo"
+            x1="0"
+            y1="0"
+            x2="256"
+            y2="256"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stop-color="var(--splash-accent)" />
+            <stop offset="1" stop-color="var(--splash-accent-2)" />
+          </linearGradient>
+        </defs>
+        <rect width="256" height="256" rx="52" fill="url(#app-splash-logo)" />
+        <path
+          d="M62 96 L100 128 L62 160"
+          fill="none"
+          stroke="#ffffff"
+          stroke-width="18"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M118 168 L182 168"
+          fill="none"
+          stroke="#ffffff"
+          stroke-width="18"
+          stroke-linecap="round"
+        />
+      </svg>
       <div class="app-loading-spinner"></div>
-      <div>Carregando…</div>
+      <div class="app-loading-status">
+        Carregando<span class="app-loading-dots"
+          ><span>.</span><span>.</span><span>.</span></span
+        >
+      </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

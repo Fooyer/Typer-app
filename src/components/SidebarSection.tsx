@@ -35,7 +35,12 @@ function SidebarSection({
           </div>
         )}
       </div>
-      {!collapsed && <div className="sidebar-section-body">{children}</div>}
+      {/* Kept mounted even when collapsed so the collapse/expand can animate (see
+          .sidebar-section-collapse in style.css — a 1fr/0fr grid-row transition); unmounting the
+          body would make it snap instead of easing. */ }
+      <div className="sidebar-section-collapse">
+        <div className="sidebar-section-body">{children}</div>
+      </div>
     </div>
   );
 }

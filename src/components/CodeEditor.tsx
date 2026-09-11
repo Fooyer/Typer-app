@@ -48,6 +48,8 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function CodeEd
   const modelsRef = useRef(new Map<string, monaco.editor.ITextModel>());
   const listenersRef = useRef(new Map<string, monaco.IDisposable>());
   const paramDecorationsRef = useRef(new Map<string, string[]>());
+  const viewStatesRef = useRef(new Map<string, monaco.editor.ICodeEditorViewState>());
+  const shownTabIdRef = useRef<string | null>(null);
   const onContentChangeRef = useRef(onContentChange);
   const [ready, setReady] = useState(false);
 
@@ -121,6 +123,8 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function CodeEd
       listenersRef.current.get(id)?.dispose();
       listenersRef.current.delete(id);
       paramDecorationsRef.current.delete(id);
+      viewStatesRef.current.delete(id);
+      if (shownTabIdRef.current === id) shownTabIdRef.current = null;
       model.dispose();
       modelsRef.current.delete(id);
     }
@@ -161,8 +165,17 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function CodeEd
 
   useEffect(() => {
     if (!ready || !activeTabId || !editorRef.current) return;
+    const editor = editorRef.current;
     const model = modelsRef.current.get(activeTabId);
-    if (model) editorRef.current.setModel(model);
+    if (!model) return;
+    if (shownTabIdRef.current && shownTabIdRef.current !== activeTabId) {
+      const state = editor.saveViewState();
+      if (state) viewStatesRef.current.set(shownTabIdRef.current, state);
+    }
+    editor.setModel(model);
+    const saved = viewStatesRef.current.get(activeTabId);
+    if (saved) editor.restoreViewState(saved);
+    shownTabIdRef.current = activeTabId;
   }, [ready, activeTabId, tabIdsKey]);
 
   // readOnly is an editor-level option (there's one shared editor across all tabs' models — see

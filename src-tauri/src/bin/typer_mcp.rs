@@ -65,7 +65,8 @@ fn iris_tools() -> Value {
     json!([
         {
             "name": "list_documents",
-            "description": "Lista as classes e rotinas ObjectScript existentes no namespace conectado. \
+            "description": "Lista as classes e rotinas ObjectScript existentes no namespace conectado (mesma \
+                lista já carregada no explorador do app — instantânea, sem consulta nova ao servidor). \
                 Sem argumentos, retorna um RESUMO por pacote (nome do pacote + quantidade de documentos) — \
                 use isso primeiro para se situar. Para ver os documentos de um pacote específico (ex: todos \
                 os arquivos do pacote 'Wiki'), chame de novo passando 'filter' com o nome do pacote ou um \
@@ -93,7 +94,9 @@ fn iris_tools() -> Value {
         },
         {
             "name": "search",
-            "description": "Busca um texto no código-fonte de todas as classes/rotinas do namespace.",
+            "description": "Busca um texto no conteúdo do código-fonte de todas as classes/rotinas do namespace \
+                (busca no servidor; pode não existir ou falhar em servidores antigos). Use-a só para \
+                achar ONDE um texto aparece — para localizar arquivos, prefira list_documents + read_document.",
             "inputSchema": {
                 "type": "object",
                 "properties": { "query": { "type": "string" } },
@@ -132,8 +135,9 @@ fn specs_tools() -> Value {
         },
         {
             "name": "read",
-            "description": "Lê o conteúdo de um arquivo .md da aba 'Specs' pelo nome (ex: 'plano.md'). Leia \
-                apenas as specs cujo nome pareça relevante para a tarefa atual, não todas indiscriminadamente.",
+            "description": "Lê o conteúdo de um arquivo .md da aba 'Specs' pelo nome (ex: 'plano.md'). No \
+                início de uma conversa, leia todas as specs listadas, uma por vez; depois use conforme a \
+                necessidade ou quando o usuário mencionar alguma especificamente.",
             "inputSchema": {
                 "type": "object",
                 "properties": { "name": { "type": "string", "description": "Nome do arquivo .md, ex: plano.md" } },

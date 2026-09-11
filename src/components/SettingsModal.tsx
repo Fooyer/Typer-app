@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import type { AppTheme } from "../themes/registry";
-import { AI_PROVIDERS, loadAiPreference, saveAiPreference } from "../utils/aiPreference";
+import {
+  AI_PROVIDERS,
+  loadAiPreference,
+  saveAiPreference,
+} from "../utils/aiPreference";
+import AppLogo from "./AppLogo";
 
 export interface SettingsModalProps {
   themes: AppTheme[];
@@ -14,9 +19,9 @@ export interface SettingsModalProps {
 
 type SettingsTab = "aparencia" | "ia";
 
-const TABS: { id: SettingsTab; label: string; icon: string }[] = [
-  { id: "aparencia", label: "Aparência", icon: "🎨" },
-  { id: "ia", label: "Inteligência Artificial", icon: "🤖" },
+const TABS: { id: SettingsTab; label: string; icon: string; desc: string }[] = [
+  { id: "aparencia", label: "Aparência", icon: "🎨", desc: "Tema, cores e destaque" },
+  { id: "ia", label: "Inteligência Artificial", icon: "🤖", desc: "Provedor, modelo e chaves" },
 ];
 
 // Presets shown alongside the free-form color picker — "Padrão" (null) restores the original brand
@@ -63,6 +68,9 @@ function SettingsModal({
   const hasElectronAPI = typeof window.electronAPI !== "undefined";
   const [providerId, setProviderId] = useState<string>(() => loadAiPreference().providerId);
   const [model, setModel] = useState<string>(() => loadAiPreference().model);
+  // Model ids the bundled opencode can actually use, per selected provider (`opencode models ...`).
+  // Empty for providers not configured on this machine → the field then works as free-form id only.
+  const [modelOptions, setModelOptions] = useState<string[]>([]);
   // Draft API keys for BOTH here: each provider row keeps its own typed-but-unsaved value, so the
   // user can fill several keys and save them all at once (the main process persists each provider's
   // key independently — see electron/aiSettings.ts).
@@ -92,7 +100,20 @@ function SettingsModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const selectedProvider = AI_PROVIDERS.find((p) => p.id === providerId) ?? AI_PROVIDERS[0];
+  // The model suggestions come live from the bundled opencode binary, scoped to the selected
+  // provider. Refetch whenever the provider changes so the datalist only ever offers ids that make
+  // sense for what's selected (on this machine "Padrão" is where the opencode/* models live).
+  useEffect(() => {
+    if (!hasElectronAPI) {
+      setModelOptions([]);
+      return;
+    }
+    window.electronAPI.ai
+      .modelList(providerId === "default" ? undefined : providerId)
+      .then((models) => setModelOptions(models))
+      .catch(() => setModelOptions([]));
+  }, [hasElectronAPI, providerId]);
+
   const isDefaultProvider = providerId === "default";
   const keyProviders = AI_PROVIDERS.filter((p) => p.id !== "default");
 
@@ -130,7 +151,11 @@ function SettingsModal({
         const value = (apiKeys[provider.id] ?? "").trim();
         if (value) keys[provider.id] = value;
       }
-      const config = await window.electronAPI.ai.saveConfig({ providerId, model: trimmed, keys });
+      const config = await window.electronAPI.ai.saveConfig({
+        providerId,
+        model: trimmed,
+        keys,
+      });
       saveAiPreference({ providerId, model: trimmed });
       setSavedKeyProviders(config.savedKeyProviders);
       setApiKeys(Object.fromEntries(keyProviders.map((p) => [p.id, ""])));
@@ -145,13 +170,18 @@ function SettingsModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal settings-modal" onClick={(event) => event.stopPropagation()}>
         <div className="settings-modal-header">
-          <h3>Configurações</h3>
+          <AppLogo />
+          <div className="settings-modal-title">
+            <h3>Configurações</h3>
+            <p>Ajuste a aparência do Typer e a IA que alimenta o painel do agente.</p>
+          </div>
           <button type="button" className="settings-close" onClick={onClose} title="Fechar">
             ✕
           </button>
         </div>
+
         <div className="settings-modal-body">
-          <div className="settings-tabs">
+          <nav className="settings-tabs">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
@@ -160,86 +190,97 @@ function SettingsModal({
                 onClick={() => setActiveTab(tab.id)}
               >
                 <span className="settings-tab-icon">{tab.icon}</span>
-                {tab.label}
+                <span className="settings-tab-text">
+                  <span className="settings-tab-label">{tab.label}</span>
+                  <span className="settings-tab-desc">{tab.desc}</span>
+                </span>
               </button>
             ))}
-          </div>
+          </nav>
 
           <div className="settings-content">
             {activeTab === "aparencia" && (
               <>
                 <section className="settings-section">
-                  <h4>Tema</h4>
-                  <p className="settings-hint">
-                    Temas escuros e claros portados do VS Code, ou importe o seu próprio (JSON de
-                    tema do VS Code).
-                  </p>
-                  <div className="theme-grid">
-                    {themes.map((theme) => {
-                      const { bg, accent } = swatchColors(theme);
-                      const selected = theme.id === themeId;
-                      return (
-                        <button
-                          key={theme.id}
-                          type="button"
-                          className={`theme-swatch${selected ? " selected" : ""}`}
-                          onClick={() => onSelectTheme(theme.id)}
-                          title={theme.label}
-                        >
-                          <span
-                            className="theme-swatch-preview"
-                            style={{ background: bg, borderColor: accent }}
-                          >
-                            <span className="theme-swatch-accent" style={{ background: accent }} />
-                          </span>
-                          <span className="theme-swatch-label">{theme.label}</span>
-                          <span className="theme-swatch-kind">
-                            {theme.kind === "dark" ? "Escuro" : "Claro"}
-                          </span>
-                        </button>
-                      );
-                    })}
+                  <div className="settings-section-head">
+                    <h4>Tema</h4>
+                    <p className="settings-hint">
+                      Temas escuros e claros portados do VS Code, ou importe o seu próprio
+                      (JSON de tema do VS Code).
+                    </p>
                   </div>
-                  <div className="settings-actions">
-                    <button type="button" onClick={onImportThemeClick}>
-                      Importar tema…
-                    </button>
+                  <div className="settings-card">
+                    <div className="theme-grid">
+                      {themes.map((theme) => {
+                        const { bg, accent } = swatchColors(theme);
+                        const selected = theme.id === themeId;
+                        return (
+                          <button
+                            key={theme.id}
+                            type="button"
+                            className={`theme-swatch${selected ? " selected" : ""}`}
+                            onClick={() => onSelectTheme(theme.id)}
+                            title={theme.label}
+                          >
+                            <span
+                              className="theme-swatch-preview"
+                              style={{ background: bg, borderColor: accent }}
+                            >
+                              <span className="theme-swatch-accent" style={{ background: accent }} />
+                            </span>
+                            <span className="theme-swatch-label">{theme.label}</span>
+                            <span className="theme-swatch-kind">
+                              {theme.kind === "dark" ? "Escuro" : "Claro"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="settings-actions">
+                      <button type="button" onClick={onImportThemeClick}>
+                        Importar tema…
+                      </button>
+                    </div>
                   </div>
                 </section>
 
                 <section className="settings-section">
-                  <h4>Cor de destaque</h4>
-                  <p className="settings-hint">
-                    Usada na logo e na barra de título do app — por padrão segue o tema escolhido
-                    acima, mas você pode fixar uma cor própria.
-                  </p>
-                  <div className="accent-row">
-                    {ACCENT_PRESETS.map((preset) => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        className={`accent-swatch${accentOverride === preset.value ? " selected" : ""}`}
-                        style={
-                          preset.value
-                            ? { background: preset.value }
-                            : { background: "var(--accent)" }
-                        }
-                        title={preset.label}
-                        onClick={() => onSelectAccent(preset.value)}
-                      />
-                    ))}
-                    <label
-                      className={`accent-swatch accent-swatch-custom${isCustomAccent ? " selected" : ""}`}
-                      title="Cor personalizada"
-                      style={isCustomAccent ? { background: accentOverride! } : undefined}
-                    >
-                      🎨
-                      <input
-                        type="color"
-                        value={accentOverride ?? "#7c3aed"}
-                        onChange={(event) => onSelectAccent(event.target.value)}
-                      />
-                    </label>
+                  <div className="settings-section-head">
+                    <h4>Cor de destaque</h4>
+                    <p className="settings-hint">
+                      Usada na logo e na barra de título, por padrão segue o tema escolhido,
+                      mas você pode fixar uma cor própria.
+                    </p>
+                  </div>
+                  <div className="settings-card">
+                    <div className="accent-row">
+                      {ACCENT_PRESETS.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          className={`accent-swatch${accentOverride === preset.value ? " selected" : ""}`}
+                          style={
+                            preset.value
+                              ? { background: preset.value }
+                              : { background: "var(--accent)" }
+                          }
+                          title={preset.label}
+                          onClick={() => onSelectAccent(preset.value)}
+                        />
+                      ))}
+                      <label
+                        className={`accent-swatch accent-swatch-custom${isCustomAccent ? " selected" : ""}`}
+                        title="Cor personalizada"
+                        style={isCustomAccent ? { background: accentOverride! } : undefined}
+                      >
+                        🎨
+                        <input
+                          type="color"
+                          value={accentOverride ?? "#7c3aed"}
+                          onChange={(event) => onSelectAccent(event.target.value)}
+                        />
+                      </label>
+                    </div>
                   </div>
                 </section>
               </>
@@ -248,93 +289,114 @@ function SettingsModal({
             {activeTab === "ia" && (
               <>
                 <section className="settings-section">
-                  <h4>Provedor de IA do agente</h4>
-                  <p className="settings-hint">
-                    Escolha qual provedor o agente (opencode) usa nas próximas execuções. As chaves
-                    de API ficam gravadas criptografadas no computador e nunca aparecem nas
-                    mensagens do chat.
-                  </p>
-                  <label className="settings-field">
-                    <span>Provedor</span>
-                    <select
-                      value={providerId}
-                      onChange={(event) => setProviderId(event.target.value)}
-                    >
-                      {AI_PROVIDERS.map((provider) => (
-                        <option key={provider.id} value={provider.id}>
-                          {provider.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="settings-section-head">
+                    <h4>Provedor de IA do agente</h4>
+                    <p className="settings-hint">
+                      Escolha qual provedor e qual modelo o painel de IA usa nas próximas
+                      execuções. As chaves ficam criptografadas no computador e nunca aparecem
+                      nas mensagens do chat.
+                    </p>
+                  </div>
+                  <div className="settings-card">
+                    <label className="settings-field">
+                      <span>Provedor</span>
+                      <select
+                        value={providerId}
+                        onChange={(event) => setProviderId(event.target.value)}
+                      >
+                        {AI_PROVIDERS.map((provider) => (
+                          <option key={provider.id} value={provider.id}>
+                            {provider.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-                  <label className="settings-field">
-                    <span>Modelo</span>
-                    <input
-                      type="text"
-                      list="ai-model-suggestions"
-                      value={model}
-                      onChange={(event) => setModel(event.target.value)}
-                      placeholder={
-                        isDefaultProvider ? "modelo padrão do opencode" : "ex.: gemini-2.5-pro"
-                      }
-                      disabled={isDefaultProvider}
-                    />
-                    <datalist id="ai-model-suggestions">
-                      {selectedProvider.models.map((m) => (
-                        <option key={m} value={m} />
-                      ))}
-                    </datalist>
-                  </label>
+                    <label className="settings-field">
+                      <span>Modelo</span>
+                      <input
+                        type="text"
+                        list="ai-model-suggestions"
+                        value={model}
+                        onChange={(event) => setModel(event.target.value)}
+                        placeholder={
+                          isDefaultProvider
+                            ? "modelo padrão do opencode"
+                            : "digite o id do modelo aceito pelo provedor"
+                        }
+                      />
+                      <datalist id="ai-model-suggestions">
+                        {modelOptions.map((m) => (
+                          <option key={m} value={m} />
+                        ))}
+                      </datalist>
+                      {isDefaultProvider && modelOptions.length > 0 && (
+                        <span className="settings-hint">
+                          Sugestões listadas vêm do opencode instalado (
+                          <code>opencode models</code>).
+                        </span>
+                      )}
+                      {!isDefaultProvider && modelOptions.length === 0 && (
+                        <span className="settings-hint">
+                          Este provedor não está configurado no seu opencode, digite o id do
+                          modelo manualmente (ex.: claude-sonnet-4-5).
+                        </span>
+                      )}
+                    </label>
+                  </div>
                 </section>
 
                 <section className="settings-section">
-                  <h4>Chaves de API</h4>
-                  <p className="settings-hint">
-                    Preencha várias de uma vez — salvar aplica todas. Deixe um campo vazio para
-                    manter a chave atual daquele provedor.
-                  </p>
-                  {keyProviders.map((provider) => {
-                    const saved = savedKeyProviders.includes(provider.id);
-                    return (
-                      <div key={provider.id} className="settings-field">
-                        <span className="settings-key-row">
-                          {provider.label}
-                          {saved ? (
-                            <em className="settings-key-status ok">✓ chave salva</em>
-                          ) : (
-                            <em className="settings-key-status missing">sem chave</em>
-                          )}
-                        </span>
-                        <div className="settings-key-line">
-                          <input
-                            type="password"
-                            value={apiKeys[provider.id] ?? ""}
-                            onChange={(event) => setApiKeyValue(provider.id, event.target.value)}
-                            placeholder={
-                              saved ? "•••••••• (digite para trocar)" : "cole sua chave de API"
-                            }
-                            autoComplete="off"
-                          />
-                          {saved && (
-                            <label className="settings-key-remove">
-                              <input
-                                type="checkbox"
-                                checked={removeKeys.has(provider.id)}
-                                onChange={() => toggleRemoveKey(provider.id)}
-                              />
-                              remover
-                            </label>
-                          )}
+                  <div className="settings-section-head">
+                    <h4>Chaves de API</h4>
+                    <p className="settings-hint">
+                      Preencha várias de uma vez, salvar aplica todas. Deixe um campo vazio para
+                      manter a chave atual daquele provedor.
+                    </p>
+                  </div>
+                  <div className="settings-card">
+                    {keyProviders.map((provider) => {
+                      const saved = savedKeyProviders.includes(provider.id);
+                      return (
+                        <div key={provider.id} className="settings-field">
+                          <span className="settings-key-row">
+                            {provider.label}
+                            {saved ? (
+                              <em className="settings-key-status ok">chave salva</em>
+                            ) : (
+                              <em className="settings-key-status missing">sem chave</em>
+                            )}
+                          </span>
+                          <div className="settings-key-line">
+                            <input
+                              type="password"
+                              value={apiKeys[provider.id] ?? ""}
+                              onChange={(event) => setApiKeyValue(provider.id, event.target.value)}
+                              placeholder={
+                                saved ? "•••••••• (digite para trocar)" : "cole sua chave de API"
+                              }
+                              autoComplete="off"
+                            />
+                            {saved && (
+                              <label className="settings-key-remove">
+                                <input
+                                  type="checkbox"
+                                  checked={removeKeys.has(provider.id)}
+                                  onChange={() => toggleRemoveKey(provider.id)}
+                                />
+                                remover
+                              </label>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                  <p className="settings-hint">
-                    Provedores suportados: Claude/Anthropic, Gemini/Google, OpenAI e OpenRouter
-                    (além do provedor padrão do opencode). A chave é passada ao opencode apenas no
-                    momento da execução, via variável de ambiente.
-                  </p>
+                      );
+                    })}
+                    <p className="settings-hint">
+                      Provedores suportados: Claude/Anthropic, Gemini/Google, OpenAI e OpenRouter
+                      (além do provedor padrão do opencode). A chave é passada ao opencode apenas
+                      no momento da execução, via variável de ambiente.
+                    </p>
+                  </div>
                   <div className="settings-actions">
                     <button
                       type="button"
@@ -343,7 +405,7 @@ function SettingsModal({
                     >
                       Salvar configuração de IA
                     </button>
-                    {aiStatus && <p className="settings-hint settings-status">{aiStatus}</p>}
+                    {aiStatus && <span className="settings-status">{aiStatus}</span>}
                   </div>
                 </section>
               </>

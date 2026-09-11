@@ -81,7 +81,7 @@ addCommand(
   ["kill", "k"],
   "Kill",
   "KILL var",
-  "Remove uma variável, nó de array, ou global — e todos os seus descendentes.",
+  "Remove uma variável, nó de array ou global, e todos os seus descendentes.",
 );
 addCommand(
   ["lock", "l"],
@@ -288,7 +288,7 @@ export function registerObjectScriptHover(monaco: typeof Monaco): void {
           endColumn: word.endColumn,
         },
         contents: [
-          { value: `**${entry.name}** — ${entry.kind} ObjectScript` },
+          { value: `**${entry.name}**: ${entry.kind} ObjectScript` },
           { value: "```objectscript\n" + entry.syntax + "\n```" },
           { value: entry.doc },
         ],

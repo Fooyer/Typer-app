@@ -6,35 +6,28 @@
 export interface AiProviderOption {
   id: string;
   label: string;
-  /** Example model ids shown in the picker — the real value is a free-form id the user types. */
-  models: string[];
 }
 
 export const AI_PROVIDERS: AiProviderOption[] = [
   {
     id: "default",
     label: "Padrão do opencode",
-    models: [],
   },
   {
     id: "anthropic",
     label: "Claude (Anthropic)",
-    models: ["claude-sonnet-4-5", "claude-opus-4-1", "claude-haiku-4-5", "claude-sonnet-4"],
   },
   {
     id: "google",
     label: "Gemini (Google)",
-    models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"],
   },
   {
     id: "openai",
     label: "OpenAI",
-    models: ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "o4-mini"],
   },
   {
     id: "openrouter",
     label: "OpenRouter",
-    models: ["anthropic/claude-3.7-sonnet", "google/gemini-2.5-pro"],
   },
 ];
 

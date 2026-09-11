@@ -272,6 +272,7 @@ function contextBridgeShim(): void {
     ai: {
       getConfig: () => call<AiSettingsView>("ai_get_config"),
       saveConfig: (args: AiSaveConfigArgs) => call<AiSettingsView>("ai_save_config", { args }),
+      modelList: (providerId) => call<string[]>("model_list", { providerId }),
     },
   };
 }

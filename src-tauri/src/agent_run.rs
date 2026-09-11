@@ -89,8 +89,13 @@ zero. Qualquer coisa que você "lembrar" de projetos parecidos não vale aqui. I
 - Depois de listar, leia (`iris_read_document`) os documentos cujo nome sugira relevância para a
   pergunta — não é preciso ler tudo, mas responder sem ter lido pelo menos um punhado de arquivos
   reais é inaceitável para qualquer pergunta que dependa do conteúdo do projeto.
-- Se `iris_search` ajudar a encontrar onde algo está definido, use antes de abrir documentos às
-  cegas.
+- Para descobrir quais arquivos existem, `iris_list_documents` lê a lista de arquivos que o
+  explorador do app já carregou para este namespace — instantâneo, sem consulta nova ao servidor.
+  Navegue por ela com filtros (`list_documents(filter: "...")`) e não adivinhe nomes.
+- `iris_search` só localiza um TEXTO dentro do conteúdo dos arquivos (busca no servidor) — use-a
+  apenas quando precisar achar onde um texto aparece. Se ela falhar ou for lenta — ou o servidor
+  for antigo — localize o arquivo pelo nome com `iris_list_documents` e leia com
+  `iris_read_document`, sem depender da busca.
 - Nomes de documento são sempre o caminho completo devolvido por `iris_list_documents` (ex:
   "Pacote.Sub.Classe.cls", "/csp/user/pagina.csp") — use esse valor exato em `iris_read_document`/
   `iris_propose_write`, nunca um nome adivinhado ou abreviado.
@@ -106,9 +111,11 @@ zero. Qualquer coisa que você "lembrar" de projetos parecidos não vale aqui. I
 Este projeto não tem os fontes localmente. O namespace **{namespace}** no servidor **{host}:{port}**
 é acessado inteiramente através das ferramentas MCP do servidor "iris":
 
-- `iris_list_documents` — lista classes e rotinas do namespace.
+- `iris_list_documents` — lista classes e rotinas do namespace (mesma lista já carregada no
+  explorador do app — rápida, sem busca nova no servidor; use com filtro por pacote/nome).
 - `iris_read_document` — lê o conteúdo atual de um documento (ex: "Pacote.Classe.cls").
-- `iris_search` — busca um texto no código-fonte de todo o namespace.
+- `iris_search` — busca um texto no conteúdo do código-fonte do namespace. Use só para achar ONDE
+  um texto aparece; se falhar, navegue com `iris_list_documents` + `iris_read_document`.
 - `iris_propose_write` — propõe salvar o conteúdo completo de um documento. Fica pendente até um
   humano aprovar ou rejeitar. Confira `approved` (decisão do usuário) e `saved` (se realmente
   foi gravado) no resultado: `approved: false` é uma rejeição (não insista sem perguntar);
@@ -133,11 +140,21 @@ lugar (uma pasta local, fora deste projeto) e só são acessíveis por:
 
 Sempre que o usuário mencionar "specs", "especificação", "plano" ou pedir para seguir/atualizar um
 documento de planejamento do projeto, use `specs_list`/`specs_read`/`specs_write` — nunca as
-ferramentas `iris_*`. Antes de atuar em uma tarefa, também vale a pena checar `specs_list` e ler
-(`specs_read`) as specs cujo nome pareça relevante para o que foi pedido — não leia todas
-indiscriminadamente, só as que puderem conter contexto útil. Se nenhuma parecer relevante, siga sem
-ler nenhuma. Se o usuário pedir para registrar uma decisão, atualizar o plano ou documentar algo do
-que foi feito, use `specs_write` para isso em vez de só responder no chat.
+ferramentas `iris_*`.
+
+Ler e manter as specs é obrigatório, não opcional:
+
+1. NO COMEÇO de toda conversa (na primeira mensagem de cada sessão), SEMPRE chame `specs_list` e leia
+   (`specs_read`) todas as specs listadas, uma de cada vez. Elas são a fonte de contexto mais
+   importante deste projeto — começar a trabalhar sem tê-las lido é inaceitável. Sempre que for
+   retomar um trabalho depois de algum tempo, ou quando a base puder ter mudado, releia as specs
+   antes de continuar.
+2. Mantenha as specs atualizadas proativamente: sempre que o trabalho evoluir — tarefa concluída,
+   decisão tomada, plano alterado, descoberta relevante — grave a mudança no arquivo certo com
+   `specs_write`, sobrescrevendo com o conteúdo completo. Não espere o usuário pedir "atualiza a
+   spec" e não se limite a relatar no chat. Antes de editar um arquivo que já existe, leia-o com
+   `specs_read` primeiro para não apagar conteúdo por engano (criações do zero não precisam ler
+   antes).
 
 Não use ferramentas de arquivo local (read/write/edit/bash) para nada disso — este diretório de
 projeto é só configuração, tanto o código quanto as specs são acessados exclusivamente pelas
@@ -449,4 +466,33 @@ pub fn abort_all_agent_runs() {
 #[tauri::command]
 pub fn agent_force_reset() {
     abort_all_agent_runs();
+}
+
+/// Lists the models the bundled opencode binary can actually resolve (`opencode models`), so the
+/// picker shows the real set of model ids instead of a hardcoded guess. When a specific provider is
+/// given it's forwarded to the CLI (`opencode models <provider>`) and only that provider's models
+/// are returned — providers not configured on this machine come back empty (the CLI prints
+/// "Provider not found"), which the picker treats as "free-form id only".
+#[tauri::command]
+pub fn model_list(provider_id: Option<String>) -> Vec<String> {
+    let bin = resolve_opencode_binary();
+    let mut cmd = std::process::Command::new(&bin);
+    cmd.arg("models");
+    if let Some(provider) = provider_id.as_deref().filter(|p| !p.is_empty()) {
+        cmd.arg(provider);
+    }
+    let Ok(output) = cmd.output() else {
+        return Vec::new();
+    };
+    let text = String::from_utf8_lossy(&output.stdout);
+    text.lines()
+        .map(str::trim)
+        .filter(|line| {
+            // Skip error/enveloping lines the CLI prints when a provider isn't configured.
+            !line.is_empty()
+                && !line.to_lowercase().starts_with("provider not found")
+                && !line.to_lowercase().contains("error")
+        })
+        .map(str::to_string)
+        .collect()
 }
